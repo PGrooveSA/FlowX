@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, ArrowUpDown, ClipboardList, Download, Filter as FilterIcon, ListChecks, MoreVertical, Plus, SlidersHorizontal, Upload } from 'lucide-react';
+import { ClipboardList, Download, ListChecks, MoreVertical, Plus, SlidersHorizontal, Upload } from 'lucide-react';
+import { GridHeaderCell, PagerBar, type GridColumn } from '@/components/data-table/ListControls';
 import { toast } from 'sonner';
 import { fetchForExport, fetchList, rpc, type Filter } from '@/lib/api';
 import { downloadCsv } from '@/lib/csv';
@@ -46,48 +47,7 @@ const TABS: { key: string; label: string; statuses: string[]; description: strin
     description: 'This is a list of Work Orders that have been dispatched and are awaiting delivery confirmation.' },
 ];
 
-type ColumnFilterKind = { type: 'text'; column: string } | { type: 'select'; column: string; options: { value: string; label: string }[]; op?: 'eq' | 'cs' }
-  | { type: 'date'; column: string } | { type: 'number'; column: string };
-interface Column { key: string; label: string; sort?: string; filter?: ColumnFilterKind; width?: string; render: (r: ListRow) => React.ReactNode }
-
-/** Funnel button with a small popover holding one column filter. */
-function ColumnFilterButton({ label, kind, value, onChange }: { label: string; kind: ColumnFilterKind; value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => setDraft(value), [value]);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [open]);
-  const apply = (v: string) => { onChange(v); setOpen(false); };
-  return (
-    <div ref={box} className="relative">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-label={`Filter ${label}`} aria-expanded={open}
-        className={cn('rounded p-1 hover:bg-slate-200', value ? 'text-primary' : 'text-slate-700')}>
-        <FilterIcon className="h-4 w-4" fill={value ? 'currentColor' : 'none'} />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full z-30 mt-1 w-56 rounded-md border bg-card p-2 font-normal shadow-lg" role="dialog" aria-label={`Filter ${label}`}>
-          {kind.type === 'select' ? (
-            <Select aria-label={label} autoFocus value={draft} onChange={(e) => apply(e.target.value)} placeholder="All" options={kind.options} />
-          ) : (
-            <form onSubmit={(e) => { e.preventDefault(); apply(draft.trim()); }} className="space-y-2">
-              <Input aria-label={label} autoFocus type={kind.type === 'date' ? 'date' : kind.type === 'number' ? 'number' : 'text'}
-                placeholder={kind.type === 'number' ? 'Exact number' : kind.type === 'text' ? 'Contains…' : undefined} value={draft} onChange={(e) => setDraft(e.target.value)} />
-              <div className="flex justify-end gap-2">
-                <Button type="button" size="sm" variant="ghost" onClick={() => apply('')}>Clear</Button>
-                <Button type="submit" size="sm">Apply</Button>
-              </div>
-            </form>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+type Column = GridColumn<ListRow>;
 
 /** Issued tab actions: allocated devices (issuing view) and a menu of the next permitted steps. */
 function IssuedRowActions({ row }: { row: ListRow }) {
@@ -113,7 +73,8 @@ function IssuedRowActions({ row }: { row: ListRow }) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuItem onSelect={() => nav(`/work-orders/${row.id}`)}>View work order</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => nav(`/work-orders/${row.id}/details`)}>View work order</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => nav(`/work-orders/${row.id}`)}>Full record (approvals, invoice, dispatch, history)</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => nav(`/issuing/${row.id}`)}>Allocated devices</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => window.open(`/print/work-order/${row.id}`, '_blank', 'noopener')}>Print work order</DropdownMenuItem>
           {(canInvoice || canRelease || canDispatch) && <DropdownMenuSeparator />}
@@ -123,24 +84,6 @@ function IssuedRowActions({ row }: { row: ListRow }) {
         </DropdownMenuContent>
       </DropdownMenu>
     </>
-  );
-}
-
-function Pagination({ page, pageCount, onPage }: { page: number; pageCount: number; onPage: (p: number) => void }) {
-  const start = Math.max(0, Math.min(page - 2, pageCount - 5));
-  const pages = Array.from({ length: Math.min(5, pageCount) }, (_, i) => start + i);
-  const btn = 'flex h-9 min-w-9 items-center justify-center border px-3 text-sm disabled:cursor-default disabled:bg-slate-200 disabled:text-slate-500';
-  return (
-    <nav aria-label="Pagination" className="flex items-center gap-1">
-      <button className={cn(btn, 'bg-slate-200 text-slate-600')} disabled={page === 0} onClick={() => onPage(0)} aria-label="First page">«</button>
-      <button className={cn(btn, 'bg-slate-200 text-slate-600')} disabled={page === 0} onClick={() => onPage(page - 1)} aria-label="Previous page">‹</button>
-      {pages.map((p) => (
-        <button key={p} onClick={() => onPage(p)} aria-current={p === page ? 'page' : undefined}
-          className={cn(btn, p === page ? 'border-primary bg-primary text-white' : 'bg-white text-primary hover:bg-slate-50')}>{p + 1}</button>
-      ))}
-      <button className={cn(btn, 'bg-white text-slate-600')} disabled={page + 1 >= pageCount} onClick={() => onPage(page + 1)} aria-label="Next page">›</button>
-      <button className={cn(btn, 'bg-white text-slate-600')} disabled={page + 1 >= pageCount} onClick={() => onPage(pageCount - 1)} aria-label="Last page">»</button>
-    </nav>
   );
 }
 
@@ -223,9 +166,6 @@ export function WorkOrdersPage() {
   });
   const total = q.data?.count ?? 0;
   const rows = q.data?.rows ?? [];
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const from = total === 0 ? 0 : page * pageSize + 1;
-  const to = Math.min(total, (page + 1) * pageSize);
 
   const toggleSort = (column: string) => setSort((s) => (s.column === column ? { column, desc: !s.desc } : { column, desc: false }));
   const switchTab = (key: string) => {
@@ -283,45 +223,17 @@ export function WorkOrdersPage() {
       <section role="tabpanel" aria-label={tab.label} className="bg-white px-3 pb-4 pt-4 text-[13px] text-slate-900">
         <p className="mb-4 text-[15px]">{tab.description}</p>
 
-        <div className="mb-3 grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
-          <p className="text-sm" aria-live="polite">{q.isFetching && !q.data ? 'Loading…' : `Showing ${from} to ${to} of ${total}`}</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Pagination page={page} pageCount={pageCount} onPage={setPage} />
-            <select aria-label="Rows per page" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}
-              className="h-9 rounded border border-slate-300 bg-white px-3 pr-8 text-sm">
-              {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div />
-        </div>
+        <PagerBar className="mb-3" page={page} pageSize={pageSize} total={total} loading={q.isFetching && !q.data} onPage={setPage} onPageSize={setPageSize} />
 
         {q.error ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1100px] border-collapse">
               <thead>
                 <tr className="border-b-2 border-slate-800">
-                  {columns.map((c) => {
-                    const sorted = sort.column === c.sort;
-                    return (
-                      <th key={c.key} scope="col" className="border-l border-slate-200 px-2 py-2 text-left align-bottom font-semibold first:border-l-0"
-                        aria-sort={sorted ? (sort.desc ? 'descending' : 'ascending') : undefined}>
-                        <div className="flex items-end gap-1">
-                          {c.sort ? (
-                            <button type="button" onClick={() => toggleSort(c.sort!)} className="flex flex-1 items-end justify-between gap-1 text-left">
-                              <span>{c.label}</span>
-                              {sorted ? (sort.desc ? <ArrowDown className="h-3.5 w-3.5 shrink-0 text-slate-700" /> : <ArrowUp className="h-3.5 w-3.5 shrink-0 text-slate-700" />)
-                                : <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-slate-300" />}
-                            </button>
-                          ) : <span className="flex-1">{c.label}</span>}
-                          {c.filter && (
-                            <span className="ml-1 border-l border-slate-200 pl-1">
-                              <ColumnFilterButton label={c.label} kind={c.filter} value={colFilters[c.key] ?? ''} onChange={(v) => setColFilters((s) => ({ ...s, [c.key]: v }))} />
-                            </span>
-                          )}
-                        </div>
-                      </th>
-                    );
-                  })}
+                  {columns.map((c) => (
+                    <GridHeaderCell key={c.key} column={c} sort={sort} onSort={toggleSort} filterValue={colFilters[c.key] ?? ''}
+                      onFilter={(v) => setColFilters((s) => ({ ...s, [c.key]: v }))} />
+                  ))}
                   <th scope="col" className="border-l border-slate-200 px-2 py-2 text-left align-bottom font-semibold">{tab.actionLabel ?? 'Actions'}</th>
                 </tr>
               </thead>
@@ -335,7 +247,8 @@ export function WorkOrdersPage() {
                     {columns.map((c) => <td key={c.key} className="px-2 py-3">{c.render(r)}</td>)}
                     <td className="px-2 py-2 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <Link to={`/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order" className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
+                        <Link to={tab.key === 'issued' ? `/work-orders/${r.id}/details` : `/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order"
+                          className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
                           <ClipboardList className="h-6 w-6" />
                         </Link>
                         {tab.key === 'issued' && <IssuedRowActions row={r} />}
@@ -348,19 +261,7 @@ export function WorkOrdersPage() {
           </div>
         )}
 
-        {rows.length > 0 && (
-          <div className="mt-3 grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
-            <p className="text-sm">{`Showing ${from} to ${to} of ${total}`}</p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Pagination page={page} pageCount={pageCount} onPage={setPage} />
-              <select aria-label="Rows per page" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-9 rounded border border-slate-300 bg-white px-3 pr-8 text-sm">
-                {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-            <div />
-          </div>
-        )}
+        {rows.length > 0 && <PagerBar className="mt-3" page={page} pageSize={pageSize} total={total} onPage={setPage} onPageSize={setPageSize} />}
       </section>
     </div>
   );

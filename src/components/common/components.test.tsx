@@ -54,7 +54,7 @@ describe('form validation schemas', () => {
     expect(passwordSchema.safeParse({ password: 'Longenough123', confirm: 'Longenough123' }).success).toBe(true);
   });
   it('requires an institution and positive whole quantities on work orders', () => {
-    const base = { work_order_type_id: crypto.randomUUID(), recipient_type: 'school', priority: 'normal' };
+    const base = { work_order_type_id: crypto.randomUUID(), recipient_type: 'school', priority: 'normal', purpose: 'normal', device_to_use: 'new_deployment' };
     const inst = { id: crypto.randomUUID(), name: 'X', emis_number: '1', town: null, status: 'active' };
     expect(workOrderSchema.safeParse({ ...base, lines: [{ category_id: crypto.randomUUID(), requested_qty: 1 }] }).success).toBe(false);
     expect(workOrderSchema.safeParse({ ...base, institution: inst, lines: [{ category_id: crypto.randomUUID(), requested_qty: 0 }] }).success).toBe(false);
