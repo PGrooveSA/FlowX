@@ -35,6 +35,14 @@ export function formatDate(value: string | Date | null | undefined) {
   return d.toLocaleDateString('en-ZA', { timeZone: TIMEZONE, year: 'numeric', month: 'short', day: '2-digit' });
 }
 
+/** dd/mm/yyyy in the configured timezone. */
+export function formatDateNumeric(value: string | Date | null | undefined) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { timeZone: TIMEZONE, day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 export function formatDateTime(value: string | Date | null | undefined) {
   if (!value) return '—';
   const d = new Date(value);
