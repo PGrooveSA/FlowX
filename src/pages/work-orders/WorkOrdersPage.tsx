@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, ArrowUpDown, ClipboardList, Download, Filter as FilterIcon, Plus, SlidersHorizontal, Upload } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowDown, ArrowUp, ArrowUpDown, ClipboardList, Download, Filter as FilterIcon, ListChecks, MoreVertical, Plus, SlidersHorizontal, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchForExport, fetchList, type Filter } from '@/lib/api';
+import { fetchForExport, fetchList, rpc, type Filter } from '@/lib/api';
 import { downloadCsv } from '@/lib/csv';
 import { cn, formatDateNumeric, labelize } from '@/lib/utils';
 import { PRIORITIES, RECIPIENT_TYPES } from '@/lib/status';
 import { useAuth } from '@/hooks/useAuth';
 import { opts, useCategories, useDistricts, useProvinces, useUsers, useWarehouses, useWorkOrderTypes } from '@/hooks/useLookups';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown';
 import { Input, Select } from '@/components/ui/form-controls';
 import { ErrorState, PageHeader, useDebounce } from '@/components/common';
 
@@ -20,7 +21,8 @@ export type WorkOrderRow = Record<string, unknown> & {
   invoice_status: string; delivery_status: string; created_at: string; created_by_name: string; priority: string; category_names: string;
   open_discrepancies: number; assigned_to_name: string | null; invoice_numbers: string | null; dispatch_numbers: string | null;
 };
-type ListRow = WorkOrderRow & { province_code: string; downloaded_at: string; updated_at: string; device_count: number; description: string | null; device_names: string | null };
+type ListRow = WorkOrderRow & { province_code: string; downloaded_at: string; updated_at: string; device_count: number; description: string | null;
+  device_names: string | null; started_at: string | null; allocated_clusters: string | null; invoice_required: boolean };
 
 // Columns shown per tab; tabs without their own layout use DEFAULT_COLUMNS.
 const DEFAULT_COLUMNS = ['wo_number', 'downloaded_at', 'province_code', 'emis_number', 'institution_name', 'description', 'recipient_type', 'category_names', 'device_count', 'work_order_type_name'];
@@ -32,10 +34,12 @@ const TABS: { key: string; label: string; statuses: string[]; description: strin
     description: 'This is a list of Work Orders that are currently waiting for scheduling.',
     columns: ['wo_number', 'updated_at', 'province_code', 'emis_number', 'institution_name', 'description', 'priority', 'recipient_type', 'category_names', 'device_names', 'device_count', 'work_order_type_name'],
     sort: { column: 'updated_at', desc: true }, actionLabel: 'Action' },
-  { key: 'scheduled_pending_issuing', label: 'Scheduled Pending Issuing', statuses: ['scheduled', 'scheduled_pending_issuing', 'issuing_in_progress'],
-    description: 'This is a list of Work Orders that have been scheduled and are waiting for devices to be issued.' },
-  { key: 'issued', label: 'Issued', statuses: ['issued', 'pending_invoicing', 'invoiced', 'ready_for_dispatch'],
-    description: 'This is a list of Work Orders whose devices have been issued and are being invoiced or prepared for dispatch.' },
+  // Scheduled work orders are "issued for processing" to the warehouse, so the Issued tab
+  // covers everything from scheduling until dispatch (there is no separate issuing tab).
+  { key: 'issued', label: 'Issued', statuses: ['scheduled', 'scheduled_pending_issuing', 'issuing_in_progress', 'issued', 'pending_invoicing', 'invoiced', 'ready_for_dispatch'],
+    description: 'This is a list of Work Orders that have been issued for processing.',
+    columns: ['wo_number', 'started_at', 'province_code', 'emis_number', 'institution_name', 'description', 'recipient_type', 'device_count', 'category_names', 'work_order_type_name', 'allocated_clusters'],
+    sort: { column: 'started_at', desc: true }, actionLabel: 'Action' },
   { key: 'completed', label: 'Completed', statuses: ['delivered', 'completed'],
     description: 'This is a list of Work Orders that have been delivered and completed.' },
   { key: 'dispatched', label: 'Dispatched', statuses: ['partially_dispatched', 'dispatched', 'partially_delivered'],
@@ -85,6 +89,43 @@ function ColumnFilterButton({ label, kind, value, onChange }: { label: string; k
   );
 }
 
+/** Issued tab actions: allocated devices (issuing view) and a menu of the next permitted steps. */
+function IssuedRowActions({ row }: { row: ListRow }) {
+  const { can } = useAuth();
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const run = async (fn: () => Promise<unknown>, success: string) => {
+    try { await fn(); toast.success(success); void qc.invalidateQueries({ queryKey: ['work-orders'] }); }
+    catch (e) { toast.error((e as Error).message); }
+  };
+  const s = row.status;
+  const canInvoice = can('invoices.create') && row.invoice_required && ['issued', 'pending_invoicing'].includes(s) && row.invoice_status !== 'invoiced';
+  const canRelease = can('dispatch.create') && ((row.invoice_required && s === 'invoiced') || (!row.invoice_required && s === 'issued'));
+  const canDispatch = can('dispatch.create') && s === 'ready_for_dispatch';
+  return (
+    <>
+      <Link to={`/issuing/${row.id}`} aria-label={`Allocated devices for ${row.wo_number}`} title="Allocated devices"
+        className="inline-flex rounded p-1 text-primary hover:bg-primary/10"><ListChecks className="h-6 w-6" /></Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" aria-label={`More actions for ${row.wo_number}`} title="More actions" className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
+            <MoreVertical className="h-6 w-6" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onSelect={() => nav(`/work-orders/${row.id}`)}>View work order</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => nav(`/issuing/${row.id}`)}>Allocated devices</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => window.open(`/print/work-order/${row.id}`, '_blank', 'noopener')}>Print work order</DropdownMenuItem>
+          {(canInvoice || canRelease || canDispatch) && <DropdownMenuSeparator />}
+          {canInvoice && <DropdownMenuItem onSelect={() => void run(async () => nav(`/invoicing/${await rpc<string>('create_invoice_draft', { p_work_order_id: row.id, p_auto_fill: true })}`), 'Draft invoice created')}>Create invoice</DropdownMenuItem>}
+          {canRelease && <DropdownMenuItem onSelect={() => void run(() => rpc('mark_ready_for_dispatch', { p_work_order_id: row.id }), 'Released for dispatch')}>Mark ready for dispatch</DropdownMenuItem>}
+          {canDispatch && <DropdownMenuItem onSelect={() => void run(async () => nav(`/dispatch/${await rpc<string>('create_dispatch', { p_work_order_id: row.id, p: {} })}`), 'Dispatch created')}>Create dispatch</DropdownMenuItem>}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+}
+
 function Pagination({ page, pageCount, onPage }: { page: number; pageCount: number; onPage: (p: number) => void }) {
   const start = Math.max(0, Math.min(page - 2, pageCount - 5));
   const pages = Array.from({ length: Math.min(5, pageCount) }, (_, i) => start + i);
@@ -127,6 +168,8 @@ export function WorkOrdersPage() {
     { key: 'wo_number', label: 'Work Order Number', sort: 'wo_number', filter: { type: 'text', column: 'wo_number' }, render: (r) => r.wo_number },
     { key: 'downloaded_at', label: 'Downloaded Date', sort: 'downloaded_at', filter: { type: 'date', column: 'downloaded_at' }, render: (r) => formatDateNumeric(r.downloaded_at) },
     { key: 'updated_at', label: 'Updated Date', sort: 'updated_at', filter: { type: 'date', column: 'updated_at' }, render: (r) => formatDateNumeric(r.updated_at) },
+    { key: 'started_at', label: 'Started Date', sort: 'started_at', filter: { type: 'date', column: 'started_at' }, render: (r) => formatDateNumeric(r.started_at) },
+    { key: 'allocated_clusters', label: 'Allocated Clusters', sort: 'allocated_clusters', filter: { type: 'text', column: 'allocated_clusters' }, render: (r) => r.allocated_clusters ?? '' },
     { key: 'priority', label: 'Priority', sort: 'priority', filter: { type: 'select', column: 'priority', options: PRIORITIES.map((p) => ({ value: p, label: labelize(p) })) }, render: (r) => labelize(r.priority) },
     { key: 'device_names', label: 'Device Name(s)', render: (r) => r.device_names ?? '' },
     { key: 'province_code', label: 'Province', sort: 'province_code', filter: { type: 'select', column: 'province_code', options: (provinces ?? []).map((p) => ({ value: p.code, label: p.code })) }, render: (r) => r.province_code },
@@ -138,7 +181,16 @@ export function WorkOrdersPage() {
     { key: 'device_count', label: '# Of Devices', sort: 'device_count', filter: { type: 'number', column: 'device_count' }, render: (r) => r.device_count },
     { key: 'work_order_type_name', label: 'Work Order Type', filter: { type: 'select', column: 'work_order_type_id', options: opts(types, (t) => t.name) }, render: (r) => r.work_order_type_name },
   ];
-  const columns = (tab.columns ?? DEFAULT_COLUMNS).map((k) => catalog.find((c) => c.key === k)!);
+  // The Issued tab labels EMIS in capitals and lets Device Type(s) and Work Order Type be sorted and filtered.
+  const issuedOverrides: Record<string, Partial<Column>> = {
+    emis_number: { label: 'EMIS' },
+    category_names: { sort: 'category_names', filter: { type: 'select', column: 'category_ids', op: 'cs', options: opts(categories, (c) => c.name) }, render: (r) => r.category_names ?? '' },
+    work_order_type_name: { sort: 'work_order_type_name' },
+  };
+  const columns = (tab.columns ?? DEFAULT_COLUMNS).map((k) => {
+    const c = catalog.find((x) => x.key === k)!;
+    return tab.key === 'issued' ? { ...c, ...issuedOverrides[k] } : c;
+  });
 
   const filters = useMemo<Filter[]>(() => {
     const f: Filter[] = [{ column: 'status', op: 'in', value: tab.statuses }];
@@ -282,14 +334,31 @@ export function WorkOrdersPage() {
                   <tr key={r.id} className="border-b border-slate-200 align-top odd:bg-slate-100">
                     {columns.map((c) => <td key={c.key} className="px-2 py-3">{c.render(r)}</td>)}
                     <td className="px-2 py-2 text-center">
-                      <Link to={`/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order" className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
-                        <ClipboardList className="h-6 w-6" />
-                      </Link>
+                      <div className="flex items-center justify-center gap-1">
+                        <Link to={`/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order" className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
+                          <ClipboardList className="h-6 w-6" />
+                        </Link>
+                        {tab.key === 'issued' && <IssuedRowActions row={r} />}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {rows.length > 0 && (
+          <div className="mt-3 grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
+            <p className="text-sm">{`Showing ${from} to ${to} of ${total}`}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Pagination page={page} pageCount={pageCount} onPage={setPage} />
+              <select aria-label="Rows per page" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}
+                className="h-9 rounded border border-slate-300 bg-white px-3 pr-8 text-sm">
+                {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div />
           </div>
         )}
       </section>
