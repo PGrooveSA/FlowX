@@ -68,6 +68,7 @@ function DispatchedRowActions({ row }: { row: ListRow }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onSelect={() => nav(`/work-orders/${row.id}/details`)}>Devices and boxes</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => nav(`/work-orders/${row.id}`)}>Full record (approvals, invoice, dispatch, history)</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => window.open(`/print/work-order/${row.id}`, '_blank', 'noopener')}>Print work order</DropdownMenuItem>
         {can('delivery.view') && <DropdownMenuItem onSelect={() => nav('/delivery')}>Delivery confirmation</DropdownMenuItem>}
       </DropdownMenuContent>
@@ -280,7 +281,8 @@ export function WorkOrdersPage() {
                     {columns.map((c) => <td key={c.key} className="px-2 py-3">{c.render(r)}</td>)}
                     <td className="px-2 py-2 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <Link to={tab.key === 'issued' || tab.key === 'completed' ? `/work-orders/${r.id}/details` : `/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order"
+                        <Link to={tab.key === 'issued' || tab.key === 'completed' ? `/work-orders/${r.id}/details`
+                          : tab.key === 'dispatched' ? `/work-orders/${r.id}/view` : `/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order"
                           className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
                           <ClipboardList className="h-6 w-6" />
                         </Link>

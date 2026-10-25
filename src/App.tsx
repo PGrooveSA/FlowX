@@ -14,7 +14,8 @@ const DashboardPage = page(() => import('@/pages/dashboard/DashboardPage'), 'Das
 const WorkOrdersPage = page(() => import('@/pages/work-orders/WorkOrdersPage'), 'WorkOrdersPage');
 const WorkOrderFormPage = page(() => import('@/pages/work-orders/WorkOrderFormPage'), 'WorkOrderFormPage');
 const WorkOrderDetailPage = page(() => import('@/pages/work-orders/WorkOrderDetailPage'), 'WorkOrderDetailPage');
-const WorkOrderDetailsPage = page(() => import('@/pages/work-orders/WorkOrderDetailsPage'), 'WorkOrderDetailsPage');
+const WorkOrderViewPage = page(() => import('@/pages/work-orders/WorkOrderViewPage'), 'WorkOrderViewPage');
+const WorkOrderDetailsPage =page(() => import('@/pages/work-orders/WorkOrderDetailsPage'), 'WorkOrderDetailsPage');
 const WorkOrderImportPage =page(() => import('@/pages/work-orders/WorkOrderImportPage'), 'WorkOrderImportPage');
 const ApprovalsPage = page(() => import('@/pages/approvals/ApprovalsPage'), 'ApprovalsPage');
 const SchedulingPage = page(() => import('@/pages/scheduling/SchedulingPage'), 'SchedulingPage');
@@ -98,6 +99,7 @@ export function App() {
           <Route path="work-orders/new" element={guard(['work_orders.create'], <WorkOrderFormPage />)} />
           <Route path="work-orders/import" element={guard(['work_orders.import'], <WorkOrderImportPage />)} />
           <Route path="work-orders/:id" element={guard(['work_orders.view'], <WorkOrderDetailPage />)} />
+          <Route path="work-orders/:id/view" element={guard(['work_orders.view'], <WorkOrderViewPage />)} />
           <Route path="work-orders/:id/details" element={guard(['work_orders.view'], <WorkOrderDetailsPage />)} />
           <Route path="work-orders/:id/edit" element={guard(['work_orders.create'], <WorkOrderFormPage />)} />
           <Route path="approvals" element={guard(['work_orders.approve', 'repairs.approve', 'inventory.adjust_approve'], <ApprovalsPage />)} />
