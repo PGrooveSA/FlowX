@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClipboardList, Download, ListChecks, MoreVertical, Plus, SlidersHorizontal, Upload } from 'lucide-react';
+import { Boxes, ClipboardList, Download, ListChecks, MoreVertical, Plus, SlidersHorizontal, Upload } from 'lucide-react';
 import { GridHeaderCell, PagerBar, type GridColumn } from '@/components/data-table/ListControls';
 import { toast } from 'sonner';
 import { fetchForExport, fetchList, rpc, type Filter } from '@/lib/api';
@@ -224,6 +224,7 @@ export function WorkOrdersPage() {
       <PageHeader title="Work Orders" crumbs={[{ label: 'Work Orders' }]}
         actions={<>
           <Button variant="outline" onClick={() => setShowMore((s) => !s)} aria-expanded={showMore}><SlidersHorizontal /> More filters</Button>
+          <Button variant="outline" asChild><Link to="/work-orders/logistics"><Boxes /> Logistics</Link></Button>
           {can('data.export') && <Button variant="outline" loading={exporting} onClick={() => void exportRows()}><Download /> Export</Button>}
           {can('work_orders.import') && <Button variant="outline" asChild><Link to="/work-orders/import"><Upload /> Import</Link></Button>}
           {can('work_orders.create') && <Button asChild><Link to="/work-orders/new"><Plus /> New work order</Link></Button>}

@@ -14,6 +14,8 @@ const DashboardPage = page(() => import('@/pages/dashboard/DashboardPage'), 'Das
 const WorkOrdersPage = page(() => import('@/pages/work-orders/WorkOrdersPage'), 'WorkOrdersPage');
 const WorkOrderFormPage = page(() => import('@/pages/work-orders/WorkOrderFormPage'), 'WorkOrderFormPage');
 const WorkOrderDetailPage = page(() => import('@/pages/work-orders/WorkOrderDetailPage'), 'WorkOrderDetailPage');
+const WorkOrderLogisticsPage = page(() => import('@/pages/work-orders/WorkOrderLogisticsPage'), 'WorkOrderLogisticsPage');
+const PrintBoxLabels = page(() => import('@/pages/print/PrintBoxLabels'), 'PrintBoxLabels');
 const WorkOrderViewPage = page(() => import('@/pages/work-orders/WorkOrderViewPage'), 'WorkOrderViewPage');
 const WorkOrderDetailsPage =page(() => import('@/pages/work-orders/WorkOrderDetailsPage'), 'WorkOrderDetailsPage');
 const WorkOrderImportPage =page(() => import('@/pages/work-orders/WorkOrderImportPage'), 'WorkOrderImportPage');
@@ -86,6 +88,7 @@ export function App() {
         <Route path="/print/invoice/:id" element={<Protected>{guard(['invoices.view'], <PrintInvoice />)}</Protected>} />
         <Route path="/print/dispatch/:id" element={<Protected>{guard(['dispatch.view'], <PrintDispatchNote />)}</Protected>} />
         <Route path="/print/delivery/:id" element={<Protected>{guard(['delivery.view'], <PrintDeliveryReceipt />)}</Protected>} />
+        <Route path="/print/box-labels" element={<Protected>{guard(['work_orders.view'], <PrintBoxLabels />)}</Protected>} />
         <Route path="/print/labels" element={<Protected>{guard(['labels.print'], <PrintLabels />)}</Protected>} />
 
         <Route element={<Protected><AppLayout /></Protected>}>
@@ -94,6 +97,7 @@ export function App() {
           <Route path="work-orders/new" element={guard(['work_orders.create'], <WorkOrderFormPage />)} />
           <Route path="work-orders/import" element={guard(['work_orders.import'], <WorkOrderImportPage />)} />
           <Route path="work-orders/:id" element={guard(['work_orders.view'], <WorkOrderDetailPage />)} />
+          <Route path="work-orders/logistics" element={guard(['work_orders.view'], <WorkOrderLogisticsPage />)} />
           <Route path="work-orders/:id/view" element={guard(['work_orders.view'], <WorkOrderViewPage />)} />
           <Route path="work-orders/:id/details" element={guard(['work_orders.view'], <WorkOrderDetailsPage />)} />
           <Route path="work-orders/:id/edit" element={guard(['work_orders.create'], <WorkOrderFormPage />)} />
