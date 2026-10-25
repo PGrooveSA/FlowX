@@ -113,7 +113,7 @@ export function WorkOrderDetailPage() {
 
       <Tabs defaultValue="overview">
         <TabsList>
-          {['overview', 'devices', 'approvals', 'scheduling', 'invoice', 'dispatch', 'delivery', 'attachments', 'history'].map((t) =>
+          {['overview', 'packages', 'devices', 'approvals', 'scheduling', 'invoice', 'dispatch', 'delivery', 'attachments', 'history'].map((t) =>
             <TabsTrigger key={t} value={t}>{labelize(t)}</TabsTrigger>)}
         </TabsList>
 
@@ -194,6 +194,7 @@ export function WorkOrderDetailPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="packages"><PackagesTab woId={wo.id} institutionId={wo.institution_id as string} status={s} /></TabsContent>
         <TabsContent value="approvals"><ApprovalsTab woId={wo.id} /></TabsContent>
         <TabsContent value="scheduling"><SchedulesTab woId={wo.id} /></TabsContent>
         <TabsContent value="invoice"><InvoicesTab woId={wo.id} /></TabsContent>
@@ -487,6 +488,95 @@ function DeliveryTab({ woId }: { woId: string }) {
       <td className="mono px-3 py-2">{d.dispatch_number}</td><td className="px-3 py-2"><StatusBadge status={d.outcome} /></td><td className="px-3 py-2">{d.received_by_name ?? '—'}</td>
       <td className="px-3 py-2">{formatDateTime(d.delivered_at)}</td><td className="px-3 py-2 text-right">{d.quantity_expected}</td><td className="px-3 py-2 text-right">{d.quantity_received}</td><td className="px-3 py-2 text-right">{d.quantity_outstanding}</td></tr>)}</tbody></table>
     : <EmptyState title="No deliveries recorded" />}</CardContent></Card>;
+}
+
+interface PackageRow { id: string; package_id: string; recipient_id: string | null; recipient_name: string | null; grade: string | null; classroom: string | null; device_serials: string | null; created_at: string }
+
+/** Packages are the recipient kits on the work order (e.g. one learner's tablet and SIM). */
+function PackagesTab({ woId, institutionId, status }: { woId: string; institutionId: string; status: string }) {
+  const { canAny } = useAuth();
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [cancelling, setCancelling] = useState<PackageRow | null>(null);
+  const q = useQuery({ queryKey: ['wo-tab', 'packages', woId], queryFn: () => fetchAll<PackageRow>('v_work_order_packages', '*', (x) => x.eq('work_order_id', woId).order('package_id')) });
+  const editable = canAny('work_orders.create', 'recipients.manage') && !['dispatched', 'partially_delivered', 'delivered', 'completed', 'cancelled'].includes(status);
+  const refresh = () => { void qc.invalidateQueries({ queryKey: ['wo-tab', 'packages', woId] }); void qc.invalidateQueries({ queryKey: ['wo-view', woId] }); };
+  if (!q.data) return <LoadingState />;
+  return (
+    <Card>
+      <CardHeader><CardTitle>Packages ({q.data.length})</CardTitle>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" asChild><Link to={`/work-orders/${woId}/view`}>View Work Order page</Link></Button>
+          {editable && <Button size="sm" onClick={() => setAdding(true)}>Add packages</Button>}
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-x-auto p-0">
+        {q.data.length ? (
+          <table className="w-full text-sm">
+            <thead className="bg-muted/60 text-left text-xs uppercase text-muted-foreground"><tr>
+              <th className="px-3 py-2">Package</th><th className="px-3 py-2">Recipient</th><th className="px-3 py-2">Grade</th><th className="px-3 py-2">Class</th>
+              <th className="px-3 py-2">Linked devices</th><th className="px-3 py-2">Created</th><th /></tr></thead>
+            <tbody>{q.data.map((p) => (
+              <tr key={p.id} className="border-t">
+                <td className="mono px-3 py-2">{p.package_id}</td><td className="px-3 py-2">{p.recipient_name ?? (p.recipient_id ? 'Restricted (learner)' : '—')}</td>
+                <td className="px-3 py-2">{p.grade ?? ''}</td><td className="px-3 py-2">{p.classroom ?? ''}</td>
+                <td className="mono px-3 py-2 text-xs">{p.device_serials ?? ''}</td><td className="px-3 py-2">{formatDate(p.created_at)}</td>
+                <td className="px-3 py-2 text-right">{editable && !p.device_serials && <Button size="sm" variant="ghost" onClick={() => setCancelling(p)}>Cancel</Button>}</td>
+              </tr>))}</tbody>
+          </table>
+        ) : <EmptyState title="No packages yet" description="Add a package for each recipient (for example each learner) who will receive a kit of devices." />}
+      </CardContent>
+      {adding && <AddPackagesDialog woId={woId} institutionId={institutionId} existing={q.data.map((p) => p.recipient_id).filter(Boolean) as string[]} onClose={() => setAdding(false)} onDone={refresh} />}
+      <ConfirmDialog open={!!cancelling} onOpenChange={(o) => !o && setCancelling(null)} title={`Cancel package ${cancelling?.package_id}`} reasonLabel="Reason" minReason={3}
+        description="The package is kept for the record but no longer appears on the work order."
+        onConfirm={async (r) => { try { await rpc('cancel_work_order_package', { p_package_id: cancelling!.id, p_reason: r }); toast.success('Package cancelled'); refresh(); } catch (e) { toast.error((e as Error).message); throw e; } }} />
+    </Card>
+  );
+}
+
+function AddPackagesDialog({ woId, institutionId, existing, onClose, onDone }: { woId: string; institutionId: string; existing: string[]; onClose: () => void; onDone: () => void }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [unnamed, setUnnamed] = useState('0');
+  const [grade, setGrade] = useState('');
+  const [cls, setCls] = useState('');
+  const [busy, setBusy] = useState(false);
+  const recipients = useQuery({
+    queryKey: ['recipients', institutionId, 'active'],
+    queryFn: () => fetchAll<{ id: string; full_name: string; recipient_type: string; grade: string | null; class_name: string | null }>('recipients',
+      'id, full_name, recipient_type, grade, class_name', (q) => q.eq('institution_id', institutionId).eq('is_active', true).order('full_name')),
+  });
+  const available = (recipients.data ?? []).filter((r) => !existing.includes(r.id));
+  const count = selected.size + (Number(unnamed) || 0);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent wide>
+        <DialogHeader title="Add packages" description="One package per recipient. Recipients are managed on the institution's page; learner records are visible only to authorised users." />
+        <div className="max-h-64 space-y-1 overflow-y-auto rounded border p-2">
+          {available.length ? available.map((r) => (
+            <label key={r.id} className="flex items-center gap-2 text-sm">
+              <Checkbox checked={selected.has(r.id)} onChange={(e) => { const n = new Set(selected); if (e.target.checked) n.add(r.id); else n.delete(r.id); setSelected(n); }} />
+              {r.full_name} <span className="text-xs text-muted-foreground">({labelize(r.recipient_type)}{r.grade ? `, Grade ${r.grade}${r.class_name ? ` ${r.class_name}` : ''}` : ''})</span>
+            </label>)) : <p className="text-sm text-muted-foreground">No further recipients you can see are registered for this institution.</p>}
+        </div>
+        {available.length > 0 && <Button size="sm" variant="ghost" className="mt-1" onClick={() => setSelected(new Set(available.map((r) => r.id)))}>Select all</Button>}
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <Field label="Unnamed packages" htmlFor="pk-n" hint="For recipients not yet registered"><Input id="pk-n" type="number" min={0} max={5000} value={unnamed} onChange={(e) => setUnnamed(e.target.value)} /></Field>
+          <Field label="Grade (unnamed)" htmlFor="pk-g"><Input id="pk-g" value={grade} onChange={(e) => setGrade(e.target.value)} /></Field>
+          <Field label="Class (unnamed)" htmlFor="pk-c"><Input id="pk-c" value={cls} onChange={(e) => setCls(e.target.value)} /></Field>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button loading={busy} disabled={count < 1} onClick={async () => {
+            setBusy(true);
+            try {
+              const n = await rpc<number>('add_work_order_packages', { p_work_order_id: woId, p_recipient_ids: [...selected], p_unnamed_count: Number(unnamed) || 0, p_grade: grade || null, p_class_name: cls || null });
+              toast.success(`${n} package(s) added`); onDone(); onClose();
+            } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+          }}>Add {count} package{count === 1 ? '' : 's'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function HistoryTab({ woId }: { woId: string }) {

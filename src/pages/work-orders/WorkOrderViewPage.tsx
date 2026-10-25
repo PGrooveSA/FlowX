@@ -45,7 +45,7 @@ export function WorkOrderViewPage() {
     queryFn: async () => {
       const [wo, extra, lines, dispatches] = await Promise.all([
         fetchOne<Header>('v_work_order_list', 'id', id),
-        fetchOne<{ device_to_use: string | null; purpose: string | null }>('work_orders', 'id', id, 'device_to_use, purpose'),
+        fetchOne<{ device_to_use: string | null; purpose: string | null; work_order_name: string | null }>('work_orders', 'id', id, 'device_to_use, purpose, work_order_name'),
         fetchAll<Line>('work_order_lines', 'id, line_no, device_categories(name), device_models(model_code, model_name)', (q) => q.eq('work_order_id', id).order('line_no')),
         fetchAll<{ id: string }>('dispatches', 'id', (q) => q.eq('work_order_id', id).neq('status', 'cancelled').neq('status', 'draft')),
       ]);
@@ -84,7 +84,10 @@ export function WorkOrderViewPage() {
   if (header.isLoading) return <LoadingState />;
   if (header.error || !header.data) return <ErrorState error={header.error ?? new Error('Work order not found or outside your scope')} />;
   const { wo, extra, lines, shipments } = header.data;
-  const backToList = () => nav('/work-orders?tab=dispatched');
+  // Dispatch dates apply once a work order has been scheduled; earlier stages return to their own tab.
+  const scheduled = !['draft', 'pending_authorisation', 'returned_for_correction', 'approved', 'pending_scheduling', 'cancelled'].includes(wo.status);
+  const listTab = ['approved', 'pending_scheduling'].includes(wo.status) ? 'pending_scheduling' : 'dispatched';
+  const backToList = () => nav(`/work-orders?tab=${listTab}`);
   const rows = grid.data?.rows ?? [];
   const total = grid.data?.count ?? 0;
 
@@ -92,7 +95,7 @@ export function WorkOrderViewPage() {
     <div className="-mx-3 -my-4 min-h-full bg-slate-50 px-6 py-3 text-[13px] text-slate-900 sm:-mx-6 sm:-my-6">
       <div className="mb-3 flex items-center gap-2">
         <Button variant="outline" size="sm" className="h-6 rounded-sm border-slate-800 px-2 text-xs text-primary" onClick={backToList}>&lt;Back to List</Button>
-        <Link to="/work-orders?tab=dispatched" className="text-sm text-primary hover:underline">Work Orders</Link>
+        <Link to={`/work-orders?tab=${listTab}`} className="text-sm text-primary hover:underline">Work Orders</Link>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-300 pb-3">
@@ -109,11 +112,13 @@ export function WorkOrderViewPage() {
           <Fact label="Work Order Type" value={wo.work_order_type_name} />
           <Fact label="Status" value={labelize(wo.status)} />
           <Fact label="Scheduling Priority" value={labelize(wo.priority)} />
-          <Fact label="Expected Dispatch/Install Date" value={wo.scheduled_date ? isoSlash(wo.scheduled_date) : 'Not set'} bold={false} />
-          <Fact label="Actual Dispatch/Install Date" value={wo.first_dispatched_at ? isoSlash(wo.first_dispatched_at) : 'Not set'} bold={false} />
+          {scheduled && <>
+            <Fact label="Expected Dispatch/Install Date" value={wo.scheduled_date ? isoSlash(wo.scheduled_date) : 'Not set'} bold={false} />
+            <Fact label="Actual Dispatch/Install Date" value={wo.first_dispatched_at ? isoSlash(wo.first_dispatched_at) : 'Not set'} bold={false} />
+          </>}
         </dl>
         <dl>
-          <Fact label="Work Order Name" value={`${wo.work_order_type_name} for ${RECIPIENT_PLURAL[wo.recipient_type] ?? 'Recipients'} at EMIS ${wo.emis_number}`} />
+          <Fact label="Work Order Name" value={extra?.work_order_name ?? `${wo.work_order_type_name} for ${RECIPIENT_PLURAL[wo.recipient_type] ?? 'Recipients'} at EMIS ${wo.emis_number}`} />
           <Fact label="Description" value={wo.description ?? ''} />
           <Fact label="Device To Use" value={extra?.device_to_use ? labelize(extra.device_to_use) : 'Not Selected'} />
           <Fact label="Purpose of Work Order" value={extra?.purpose ? labelize(extra.purpose) : 'Not Selected'} />

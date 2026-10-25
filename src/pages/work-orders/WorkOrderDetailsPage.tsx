@@ -24,7 +24,7 @@ interface Allocation {
   id: string; device_id: string; allocation_status: string; shift_number: number; location_code: string | null; serial_number: string | null;
   device_type: string; asset_tag: string; device_name: string; service_provider: string | null; current_phase: string;
   previous_asset_tag: string | null; previous_device_name: string | null; box_number: string | null; scan_status: string; scanned: boolean;
-  recipient_id: string | null; recipient_name: string | null;
+  package_id: string | null; package_number: string | null; recipient_name: string | null;
 }
 
 const SCAN_FILTERS = [
@@ -229,7 +229,7 @@ export function WorkOrderDetailsPage() {
                             <DropdownMenuItem onSelect={() => setBoxing({ ids: [r.id], clear: true })}>Remove from box</DropdownMenuItem>
                           )}
                           {can('recipients.manage') || can('issuing.pick') ? (
-                            <DropdownMenuItem onSelect={() => setAssigning(r)}>{r.recipient_name ? `Change recipient (${r.recipient_name})` : 'Assign recipient'}</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setAssigning(r)}>{r.package_number ? `Change package (${r.package_number}${r.recipient_name ? `, ${r.recipient_name}` : ''})` : 'Link to package'}</DropdownMenuItem>
                           ) : null}
                           {can('issuing.pick') && r.allocation_status === 'reserved' && (
                             <DropdownMenuItem onSelect={() => nav(`/issuing/${id}`)}>Scan in issuing workspace</DropdownMenuItem>
@@ -247,7 +247,7 @@ export function WorkOrderDetailsPage() {
       </div>
 
       {boxing && <BoxDialog workOrderId={wo.id} ids={boxing.ids} clear={boxing.clear} onClose={() => setBoxing(null)} onDone={refresh} />}
-      {assigning && <RecipientDialog institutionId={wo.institution_id} allocation={assigning} onClose={() => setAssigning(null)} onDone={refresh} />}
+      {assigning && <PackageDialog workOrderId={wo.id} allocation={assigning} onClose={() => setAssigning(null)} onDone={refresh} />}
     </div>
   );
 }
@@ -278,30 +278,31 @@ function BoxDialog({ workOrderId, ids, clear, onClose, onDone }: { workOrderId: 
   );
 }
 
-/** Names the recipient (e.g. learner) receiving one package; learners are listed only for authorised users. */
-function RecipientDialog({ institutionId, allocation, onClose, onDone }: { institutionId: string; allocation: Allocation; onClose: () => void; onDone: () => void }) {
-  const [recipient, setRecipient] = useState(allocation.recipient_id ?? '');
+/** Links one allocated device to a package (recipient kit) on the same work order. */
+function PackageDialog({ workOrderId, allocation, onClose, onDone }: { workOrderId: string; allocation: Allocation; onClose: () => void; onDone: () => void }) {
+  const [pkg, setPkg] = useState(allocation.package_id ?? '');
   const [busy, setBusy] = useState(false);
-  const recipients = useQuery({
-    queryKey: ['recipients', institutionId, 'active'],
-    queryFn: () => fetchAll<{ id: string; full_name: string; recipient_type: string; grade: string | null; class_name: string | null }>('recipients',
-      'id, full_name, recipient_type, grade, class_name', (q) => q.eq('institution_id', institutionId).eq('is_active', true).order('full_name')),
+  const packages = useQuery({
+    queryKey: ['wo-details', workOrderId, 'packages'],
+    queryFn: () => fetchAll<{ id: string; package_id: string; recipient_name: string | null; grade: string | null; classroom: string | null; device_serials: string | null }>(
+      'v_work_order_packages', 'id, package_id, recipient_name, grade, classroom, device_serials', (q) => q.eq('work_order_id', workOrderId).order('package_id')),
   });
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
-        <DialogHeader title={`Recipient for ${allocation.serial_number ?? allocation.asset_tag}`}
-          description="The package is listed under this person on the View Work Order page. Leave empty to use the work order's recipient." />
-        <Field label="Recipient" htmlFor="pkg-recipient">
-          <Select id="pkg-recipient" placeholder="Work order recipient" value={recipient} onChange={(e) => setRecipient(e.target.value)}
-            options={(recipients.data ?? []).map((r) => ({ value: r.id, label: `${r.full_name} (${labelize(r.recipient_type)}${r.grade ? `, Grade ${r.grade}${r.class_name ? ` ${r.class_name}` : ''}` : ''})` }))} />
+        <DialogHeader title={`Package for ${allocation.serial_number ?? allocation.asset_tag}`}
+          description="Packages are the recipient kits on this work order. Add packages from the Packages tab on the work order's full record." />
+        <Field label="Package" htmlFor="pkg-select">
+          <Select id="pkg-select" placeholder="Not linked" value={pkg} onChange={(e) => setPkg(e.target.value)}
+            options={(packages.data ?? []).map((p) => ({ value: p.id, label: [p.package_id, p.recipient_name, p.grade && `Grade ${p.grade}${p.classroom ? ` ${p.classroom}` : ''}`,
+              p.device_serials && `devices: ${p.device_serials}`].filter(Boolean).join(' · ') }))} />
         </Field>
-        {recipients.data && recipients.data.length === 0 && <p className="mt-2 text-xs text-muted-foreground">No recipients you can see are registered for this institution. Add them on the institution's page.</p>}
+        {packages.data && packages.data.length === 0 && <p className="mt-2 text-xs text-muted-foreground">This work order has no packages yet.</p>}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button loading={busy} onClick={async () => {
             setBusy(true);
-            try { await rpc('assign_allocation_recipient', { p_allocation_id: allocation.id, p_recipient_id: recipient || null }); toast.success('Recipient saved'); onDone(); onClose(); }
+            try { await rpc('assign_allocation_package', { p_allocation_id: allocation.id, p_package_id: pkg || null }); toast.success(pkg ? 'Device linked to package' : 'Device unlinked'); onDone(); onClose(); }
             catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
           }}>Save</Button>
         </DialogFooter>

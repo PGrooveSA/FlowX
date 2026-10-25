@@ -29,6 +29,7 @@ export const workOrderSchema = z.object({
   purpose: z.enum(['normal', 'urgent', 'replacement', 'special_project']),
   device_to_use: z.enum(['new_deployment', 'refurbished', 'existing_device', 'replacement_stock']),
   warehouse_id: z.string().optional(),
+  work_order_name: z.string().max(200).optional(),
   description: z.string().max(2000).optional(),
   instructions: z.string().max(2000).optional(),
   internal_notes: z.string().max(4000).optional(),
@@ -82,7 +83,7 @@ export function WorkOrderFormPage() {
       institution: d.inst, work_order_type_id: d.wo.work_order_type_id, recipient_type: d.wo.recipient_type as WorkOrderFormValues['recipient_type'],
       recipient_id: d.wo.recipient_id ?? '', recipient_group: d.wo.recipient_group ?? '', grade: d.wo.grade ?? '', class_name: d.wo.class_name ?? '',
       priority: d.wo.priority as WorkOrderFormValues['priority'], purpose: (d.wo.purpose ?? 'normal') as WorkOrderFormValues['purpose'],
-      device_to_use: (d.wo.device_to_use ?? 'new_deployment') as WorkOrderFormValues['device_to_use'], warehouse_id: d.wo.warehouse_id ?? '', description: d.wo.description ?? '',
+      device_to_use: (d.wo.device_to_use ?? 'new_deployment') as WorkOrderFormValues['device_to_use'], warehouse_id: d.wo.warehouse_id ?? '', work_order_name: d.wo.work_order_name ?? '', description: d.wo.description ?? '',
       instructions: d.wo.instructions ?? '', internal_notes: d.wo.internal_notes ?? '', source_reference: d.wo.source_reference ?? '',
       lines: d.lines.map((l) => ({ category_id: String(l.category_id), model_id: (l.model_id as string) ?? '', requested_qty: Number(l.requested_qty), notes: (l.notes as string) ?? '' })),
     });
@@ -192,6 +193,9 @@ export function WorkOrderFormPage() {
               <Select id="wh" placeholder="Decide at scheduling" {...form.register('warehouse_id')} options={opts(warehouses?.filter((w) => w.is_active), (w) => `${w.code} — ${w.name}`)} />
             </Field>
             <Field label="Source / import reference" htmlFor="src"><Input id="src" {...form.register('source_reference')} /></Field>
+            <Field label="Work order name" htmlFor="wo-name" className="md:col-span-2" hint="Optional. Leave blank to name it from the type, recipient type and EMIS number.">
+              <Input id="wo-name" {...form.register('work_order_name')} />
+            </Field>
             <Field label="Description" htmlFor="desc" className="md:col-span-2"><Textarea id="desc" {...form.register('description')} /></Field>
             <Field label="Delivery instructions" htmlFor="instr"><Textarea id="instr" {...form.register('instructions')} /></Field>
             <Field label="Internal notes" htmlFor="notes"><Textarea id="notes" {...form.register('internal_notes')} /></Field>
