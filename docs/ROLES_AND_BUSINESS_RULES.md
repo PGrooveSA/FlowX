@@ -92,7 +92,8 @@ Additional rules:
   issued, not-yet-invoiced allocations. One active invoice link per allocation (unique index). Partial invoicing is off
   by default. Full credit notes release the allocations for correct re-invoicing.
 - Money is stored as integer cents (`bigint`); timestamps as `timestamptz`, displayed in Africa/Johannesburg.
-- Document numbers (`WO-2026-000001`, `INV-…`, `DSP-…`) come from locked sequence rows inside the same transaction, so
+- Document numbers (work orders `WO00059270`, invoices `INV-2026-000001`, `DSP-…`) come from locked sequence rows
+  inside the same transaction. Prefix, separator, year and digits are configurable per document type, so
   committed numbers are unique and gap-free; the next number can only be increased.
 
 ## Privacy (POPIA)

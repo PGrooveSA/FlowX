@@ -74,22 +74,26 @@ function SettingsGroup({ categories }: { categories: string[] }) {
 }
 
 function Sequences() {
-  const q = useQuery({ queryKey: ['sequences'], queryFn: () => fetchAll<{ code: string; prefix: string; include_year: boolean; padding: number; next_value: number; current_year: number | null; description: string }>('document_sequences', '*', (x) => x.order('code')) });
-  const [edit, setEdit] = useState<Record<string, { prefix: string; padding: number; next: string }>>({});
+  const q = useQuery({ queryKey: ['sequences'], queryFn: () => fetchAll<{ code: string; prefix: string; include_year: boolean; separator: string; padding: number; next_value: number; current_year: number | null; description: string }>('document_sequences', '*', (x) => x.order('code')) });
+  const [edit, setEdit] = useState<Record<string, { prefix: string; separator: string; includeYear: boolean; padding: number; next: string }>>({});
   if (!q.data) return <LoadingState />;
   return (
-    <Card><CardContent className="p-0"><table className="w-full text-sm"><thead className="bg-muted/60 text-left text-xs uppercase text-muted-foreground"><tr><th className="px-3 py-2">Document</th><th className="px-3 py-2">Prefix</th><th className="px-3 py-2">Digits</th><th className="px-3 py-2">Next number</th><th className="px-3 py-2">Preview</th><th /></tr></thead>
+    <Card><CardContent className="p-0"><table className="w-full text-sm"><thead className="bg-muted/60 text-left text-xs uppercase text-muted-foreground"><tr><th className="px-3 py-2">Document</th><th className="px-3 py-2">Prefix</th><th className="px-3 py-2">Separator</th><th className="px-3 py-2">Year</th><th className="px-3 py-2">Digits</th><th className="px-3 py-2">Next number</th><th className="px-3 py-2">Preview</th><th /></tr></thead>
       <tbody>{q.data.map((s) => {
-        const e = edit[s.code] ?? { prefix: s.prefix, padding: s.padding, next: String(s.next_value) };
+        const e = edit[s.code] ?? { prefix: s.prefix, separator: s.separator, includeYear: s.include_year, padding: s.padding, next: String(s.next_value) };
         const set = (p: Partial<typeof e>) => setEdit({ ...edit, [s.code]: { ...e, ...p } });
         return (
           <tr key={s.code} className="border-t"><td className="px-3 py-2">{s.description}</td>
             <td className="px-3 py-2"><Input aria-label="Prefix" className="h-8 w-24" value={e.prefix} onChange={(x) => set({ prefix: x.target.value.toUpperCase() })} /></td>
+            <td className="px-3 py-2"><Select aria-label="Separator" className="h-8 w-24" value={e.separator} onChange={(x) => set({ separator: x.target.value })}
+              options={[{ value: '-', label: '-' }, { value: '/', label: '/' }, { value: '', label: 'None' }]} /></td>
+            <td className="px-3 py-2"><Checkbox aria-label="Include year" checked={e.includeYear} onChange={(x) => set({ includeYear: x.target.checked })} /></td>
             <td className="px-3 py-2"><Input aria-label="Digits" className="h-8 w-20" type="number" min={3} max={10} value={e.padding} onChange={(x) => set({ padding: Number(x.target.value) })} /></td>
             <td className="px-3 py-2"><Input aria-label="Next number" className="h-8 w-28" type="number" min={s.next_value} value={e.next} onChange={(x) => set({ next: x.target.value })} /></td>
-            <td className="mono px-3 py-2 text-xs">{e.prefix}-{s.include_year ? `${new Date().getFullYear()}-` : ''}{String(e.next).padStart(e.padding, '0')}</td>
+            <td className="mono px-3 py-2 text-xs">{e.prefix}{e.separator}{e.includeYear ? `${new Date().getFullYear()}${e.separator}` : ''}{String(e.next).padStart(e.padding, '0')}</td>
             <td className="px-3 py-2">{edit[s.code] && <Button size="sm" onClick={async () => {
-              try { await rpc('update_document_sequence', { p_code: s.code, p_prefix: e.prefix, p_padding: e.padding, p_next_value: Number(e.next) }); toast.success('Numbering updated'); setEdit({}); void q.refetch(); }
+              try { await rpc('update_document_sequence', { p_code: s.code, p_prefix: e.prefix, p_padding: e.padding, p_next_value: Number(e.next),
+                p_separator: e.separator, p_include_year: e.includeYear }); toast.success('Numbering updated'); setEdit({}); void q.refetch(); }
               catch (err) { toast.error((err as Error).message); }
             }}>Save</Button>}</td></tr>);
       })}</tbody></table>

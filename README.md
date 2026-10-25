@@ -73,7 +73,7 @@ DeviceFlow uses its own port range so it can run alongside other Supabase projec
 The demo script drives the real workflow functions, so the database contains work orders in most states, a
 completed end-to-end order, a partial dispatch with a missing device, a draft and issued invoices, a replacement
 transaction, a repair in progress, a pending stock adjustment, a goods receipt and an **open serial mismatch**
-(WO-2026-000006 expects `ABC123`; `XYZ789` was scanned and blocked).
+(WO00000006 expects `ABC123`; `XYZ789` was scanned and blocked).
 
 The seed data (`supabase/seed.sql`) is fictional and runs only on `supabase db reset` against the local stack.
 `scripts/seed-demo.mjs` refuses to run against a non-local URL.
