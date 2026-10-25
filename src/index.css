@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 14% 96%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 40%;
+    --border: 220 13% 88%;
+    --input: 220 13% 82%;
+    --ring: 221 83% 53%;
+    /* primary is an "r g b" triple so the brand colour can be configured at runtime */
+    --primary: 29 78 216;
+    --primary-foreground: 0 0% 100%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+  }
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-background text-foreground antialiased; font-feature-settings: 'tnum' 1; }
+  :focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+  * { @apply border-border; }
+}
+
+@layer components {
+  .page-title { @apply text-xl font-semibold tracking-tight text-foreground sm:text-2xl; }
+  .section-title { @apply text-sm font-semibold text-foreground; }
+  .muted { @apply text-muted-foreground; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+}
+
+/* Print layouts for documents and labels */
+@media print {
+  @page { margin: 12mm; }
+  body { background: #fff !important; }
+  .no-print { display: none !important; }
+  .print-page { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+  .label-sheet { gap: 0 !important; }
+  .label { break-inside: avoid; page-break-inside: avoid; border: 1px dashed #bbb; }
+}
