@@ -55,7 +55,7 @@ export function WorkOrderViewPage() {
 
   const columns: GridColumn<Package>[] = [
     { key: 'package_id', label: 'Package Id', sort: 'package_id', filter: { type: 'text', column: 'package_id' }, render: (r) => r.package_id },
-    { key: 'recipient_name', label: 'Recipient Name & Surname', sort: 'recipient_name', filter: { type: 'text', column: 'recipient_name' }, render: (r) => (r.recipient_name ?? '').toUpperCase() },
+    { key: 'recipient_name', label: 'Recipient Name & Surname', sort: 'recipient_name', filter: { type: 'text', column: 'recipient_name' }, render: (r) => r.recipient_name ?? '' },
     { key: 'grade', label: 'Grade', sort: 'grade', filter: { type: 'text', column: 'grade' }, render: (r) => r.grade ?? '' },
     { key: 'classroom', label: 'Classroom', sort: 'classroom', filter: { type: 'text', column: 'classroom' }, render: (r) => r.classroom ?? '' },
     { key: 'created_at', label: 'Created Date', sort: 'created_at', filter: { type: 'date', column: 'created_at' }, render: (r) => formatDateNumeric(r.created_at) },
@@ -86,7 +86,8 @@ export function WorkOrderViewPage() {
   const { wo, extra, lines, shipments } = header.data;
   // Dispatch dates apply once a work order has been scheduled; earlier stages return to their own tab.
   const scheduled = !['draft', 'pending_authorisation', 'returned_for_correction', 'approved', 'pending_scheduling', 'cancelled'].includes(wo.status);
-  const listTab = ['approved', 'pending_scheduling'].includes(wo.status) ? 'pending_scheduling' : 'dispatched';
+  const listTab = ['draft', 'pending_authorisation', 'returned_for_correction'].includes(wo.status) ? 'pending_authorisation'
+    : ['approved', 'pending_scheduling'].includes(wo.status) ? 'pending_scheduling' : 'dispatched';
   const backToList = () => nav(`/work-orders?tab=${listTab}`);
   const rows = grid.data?.rows ?? [];
   const total = grid.data?.count ?? 0;
@@ -100,7 +101,10 @@ export function WorkOrderViewPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-300 pb-3">
         <h1 className="text-xl font-semibold">Work Orders <span aria-hidden>▸</span> View Work Order {wo.wo_number}</h1>
-        <Button variant="outline" onClick={() => void qc.invalidateQueries({ queryKey: ['wo-view', id] })}>Refresh grid</Button>
+        <div className="flex gap-1">
+          <Button variant="outline" asChild><Link to={`/work-orders/${wo.id}`}>Full record</Link></Button>
+          <Button variant="outline" onClick={() => void qc.invalidateQueries({ queryKey: ['wo-view', id] })}>Refresh grid</Button>
+        </div>
       </div>
 
       <div className="grid gap-x-12 py-5 lg:grid-cols-2">

@@ -282,7 +282,7 @@ export function WorkOrdersPage() {
                     <td className="px-2 py-2 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Link to={tab.key === 'issued' || tab.key === 'completed' ? `/work-orders/${r.id}/details`
-                          : tab.key === 'dispatched' || tab.key === 'pending_scheduling' ? `/work-orders/${r.id}/view` : `/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order"
+                          : ['dispatched', 'pending_scheduling', 'pending_authorisation'].includes(tab.key) ? `/work-orders/${r.id}/view` : `/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order"
                           className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
                           <ClipboardList className="h-6 w-6" />
                         </Link>

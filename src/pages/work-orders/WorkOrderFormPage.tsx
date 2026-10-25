@@ -26,8 +26,8 @@ export const workOrderSchema = z.object({
   grade: z.string().max(20).optional(),
   class_name: z.string().max(40).optional(),
   priority: z.enum(['low', 'normal', 'high', 'urgent']),
-  purpose: z.enum(['normal', 'urgent', 'replacement', 'special_project']),
-  device_to_use: z.enum(['new_deployment', 'refurbished', 'existing_device', 'replacement_stock']),
+  purpose: z.enum(['normal', 'urgent', 'replacement', 'special_project']).or(z.literal('')).optional(),
+  device_to_use: z.enum(['new_deployment', 'refurbished', 'existing_device', 'replacement_stock']).or(z.literal('')).optional(),
   warehouse_id: z.string().optional(),
   work_order_name: z.string().max(200).optional(),
   description: z.string().max(2000).optional(),
@@ -66,7 +66,7 @@ export function WorkOrderFormPage() {
 
   const form = useForm<WorkOrderFormValues>({
     resolver: zodResolver(workOrderSchema),
-    defaultValues: { priority: 'normal', purpose: 'normal', device_to_use: 'new_deployment', recipient_type: 'school', lines: [{ category_id: '', model_id: '', requested_qty: 1 }] },
+    defaultValues: { priority: 'normal', purpose: '', device_to_use: '', recipient_type: 'school', lines: [{ category_id: '', model_id: '', requested_qty: 1 }] },
   });
   const lines = useFieldArray({ control: form.control, name: 'lines' });
   const institution = form.watch('institution');
@@ -82,8 +82,8 @@ export function WorkOrderFormPage() {
     form.reset({
       institution: d.inst, work_order_type_id: d.wo.work_order_type_id, recipient_type: d.wo.recipient_type as WorkOrderFormValues['recipient_type'],
       recipient_id: d.wo.recipient_id ?? '', recipient_group: d.wo.recipient_group ?? '', grade: d.wo.grade ?? '', class_name: d.wo.class_name ?? '',
-      priority: d.wo.priority as WorkOrderFormValues['priority'], purpose: (d.wo.purpose ?? 'normal') as WorkOrderFormValues['purpose'],
-      device_to_use: (d.wo.device_to_use ?? 'new_deployment') as WorkOrderFormValues['device_to_use'], warehouse_id: d.wo.warehouse_id ?? '', work_order_name: d.wo.work_order_name ?? '', description: d.wo.description ?? '',
+      priority: d.wo.priority as WorkOrderFormValues['priority'], purpose: (d.wo.purpose ?? '') as WorkOrderFormValues['purpose'],
+      device_to_use: (d.wo.device_to_use ?? '') as WorkOrderFormValues['device_to_use'], warehouse_id: d.wo.warehouse_id ?? '', work_order_name: d.wo.work_order_name ?? '', description: d.wo.description ?? '',
       instructions: d.wo.instructions ?? '', internal_notes: d.wo.internal_notes ?? '', source_reference: d.wo.source_reference ?? '',
       lines: d.lines.map((l) => ({ category_id: String(l.category_id), model_id: (l.model_id as string) ?? '', requested_qty: Number(l.requested_qty), notes: (l.notes as string) ?? '' })),
     });
@@ -133,11 +133,11 @@ export function WorkOrderFormPage() {
             <Field label="Priority" htmlFor="priority" required>
               <Select id="priority" {...form.register('priority')} options={PRIORITIES.map((p) => ({ value: p, label: labelize(p) }))} />
             </Field>
-            <Field label="Purpose of work order" htmlFor="purpose" required>
-              <Select id="purpose" {...form.register('purpose')} options={['normal', 'urgent', 'replacement', 'special_project'].map((p) => ({ value: p, label: labelize(p) }))} />
+            <Field label="Purpose of work order" htmlFor="purpose">
+              <Select id="purpose" placeholder="Not selected" {...form.register('purpose')} options={['normal', 'urgent', 'replacement', 'special_project'].map((p) => ({ value: p, label: labelize(p) }))} />
             </Field>
-            <Field label="Device to use" htmlFor="device_to_use" required>
-              <Select id="device_to_use" {...form.register('device_to_use')}
+            <Field label="Device to use" htmlFor="device_to_use">
+              <Select id="device_to_use" placeholder="Not selected" {...form.register('device_to_use')}
                 options={['new_deployment', 'refurbished', 'existing_device', 'replacement_stock'].map((p) => ({ value: p, label: labelize(p) }))} />
             </Field>
             <Field label="Recipient type" htmlFor="rtype" required error={errors.recipient_type?.message}>
