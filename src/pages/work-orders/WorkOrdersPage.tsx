@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { fetchForExport, fetchList, type Filter } from '@/lib/api';
 import { downloadCsv } from '@/lib/csv';
 import { cn, formatDateNumeric, labelize } from '@/lib/utils';
-import { RECIPIENT_TYPES } from '@/lib/status';
+import { PRIORITIES, RECIPIENT_TYPES } from '@/lib/status';
 import { useAuth } from '@/hooks/useAuth';
 import { opts, useCategories, useDistricts, useProvinces, useUsers, useWarehouses, useWorkOrderTypes } from '@/hooks/useLookups';
 import { Button } from '@/components/ui/button';
@@ -20,13 +20,18 @@ export type WorkOrderRow = Record<string, unknown> & {
   invoice_status: string; delivery_status: string; created_at: string; created_by_name: string; priority: string; category_names: string;
   open_discrepancies: number; assigned_to_name: string | null; invoice_numbers: string | null; dispatch_numbers: string | null;
 };
-type ListRow = WorkOrderRow & { province_code: string; downloaded_at: string; device_count: number; description: string | null };
+type ListRow = WorkOrderRow & { province_code: string; downloaded_at: string; updated_at: string; device_count: number; description: string | null; device_names: string | null };
 
-const TABS: { key: string; label: string; statuses: string[]; description: string }[] = [
+// Columns shown per tab; tabs without their own layout use DEFAULT_COLUMNS.
+const DEFAULT_COLUMNS = ['wo_number', 'downloaded_at', 'province_code', 'emis_number', 'institution_name', 'description', 'recipient_type', 'category_names', 'device_count', 'work_order_type_name'];
+
+const TABS: { key: string; label: string; statuses: string[]; description: string; columns?: string[]; sort?: { column: string; desc: boolean }; actionLabel?: string }[] = [
   { key: 'pending_authorisation', label: 'Pending Authorisation', statuses: ['pending_authorisation'],
     description: 'This is a list of Work Orders that are currently waiting to be authorised to move into the scheduling process.' },
   { key: 'pending_scheduling', label: 'Pending Scheduling', statuses: ['approved', 'pending_scheduling'],
-    description: 'This is a list of Work Orders that have been authorised and are waiting to be scheduled.' },
+    description: 'This is a list of Work Orders that are currently waiting for scheduling.',
+    columns: ['wo_number', 'updated_at', 'province_code', 'emis_number', 'institution_name', 'description', 'priority', 'recipient_type', 'category_names', 'device_names', 'device_count', 'work_order_type_name'],
+    sort: { column: 'updated_at', desc: true }, actionLabel: 'Action' },
   { key: 'scheduled_pending_issuing', label: 'Scheduled Pending Issuing', statuses: ['scheduled', 'scheduled_pending_issuing', 'issuing_in_progress'],
     description: 'This is a list of Work Orders that have been scheduled and are waiting for devices to be issued.' },
   { key: 'issued', label: 'Issued', statuses: ['issued', 'pending_invoicing', 'invoiced', 'ready_for_dispatch'],
@@ -112,24 +117,28 @@ export function WorkOrdersPage() {
   const [colFilters, setColFilters] = useState<Record<string, string>>({});
   const [more, setMore] = useState<Record<string, string>>({});
   const [showMore, setShowMore] = useState(false);
-  const [sort, setSort] = useState<{ column: string; desc: boolean }>({ column: 'downloaded_at', desc: true });
+  const [sort, setSort] = useState<{ column: string; desc: boolean }>(tab.sort ?? { column: 'downloaded_at', desc: true });
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [exporting, setExporting] = useState(false);
   const debouncedCols = useDebounce(colFilters, 250);
 
-  const columns: Column[] = [
+  const catalog: Column[] = [
     { key: 'wo_number', label: 'Work Order Number', sort: 'wo_number', filter: { type: 'text', column: 'wo_number' }, render: (r) => r.wo_number },
     { key: 'downloaded_at', label: 'Downloaded Date', sort: 'downloaded_at', filter: { type: 'date', column: 'downloaded_at' }, render: (r) => formatDateNumeric(r.downloaded_at) },
+    { key: 'updated_at', label: 'Updated Date', sort: 'updated_at', filter: { type: 'date', column: 'updated_at' }, render: (r) => formatDateNumeric(r.updated_at) },
+    { key: 'priority', label: 'Priority', sort: 'priority', filter: { type: 'select', column: 'priority', options: PRIORITIES.map((p) => ({ value: p, label: labelize(p) })) }, render: (r) => labelize(r.priority) },
+    { key: 'device_names', label: 'Device Name(s)', render: (r) => r.device_names ?? '' },
     { key: 'province_code', label: 'Province', sort: 'province_code', filter: { type: 'select', column: 'province_code', options: (provinces ?? []).map((p) => ({ value: p.code, label: p.code })) }, render: (r) => r.province_code },
     { key: 'emis_number', label: 'Emis', sort: 'emis_number', filter: { type: 'text', column: 'emis_number' }, render: (r) => r.emis_number },
     { key: 'institution_name', label: 'Institution', sort: 'institution_name', filter: { type: 'text', column: 'institution_name' }, render: (r) => `${r.province_code} - ${r.institution_name.toUpperCase()}` },
     { key: 'description', label: 'Description', sort: 'description', filter: { type: 'text', column: 'description' }, render: (r) => r.description ?? '' },
     { key: 'recipient_type', label: 'Recipient Type', sort: 'recipient_type', filter: { type: 'select', column: 'recipient_type', options: RECIPIENT_TYPES.map((t) => ({ value: t, label: labelize(t) })) }, render: (r) => labelize(r.recipient_type) },
-    { key: 'category_names', label: 'Device Type(s)', filter: { type: 'select', column: 'category_ids', op: 'cs', options: opts(categories, (c) => c.name) }, render: (r) => r.category_names },
+    { key: 'category_names', label: 'Device Type(s)', render: (r) => (r.category_names ?? '').replace(/, /g, ',') },
     { key: 'device_count', label: '# Of Devices', sort: 'device_count', filter: { type: 'number', column: 'device_count' }, render: (r) => r.device_count },
     { key: 'work_order_type_name', label: 'Work Order Type', filter: { type: 'select', column: 'work_order_type_id', options: opts(types, (t) => t.name) }, render: (r) => r.work_order_type_name },
   ];
+  const columns = (tab.columns ?? DEFAULT_COLUMNS).map((k) => catalog.find((c) => c.key === k)!);
 
   const filters = useMemo<Filter[]>(() => {
     const f: Filter[] = [{ column: 'status', op: 'in', value: tab.statuses }];
@@ -145,6 +154,7 @@ export function WorkOrdersPage() {
     f.push({ column: 'district_id', op: 'eq', value: more.district_id }, { column: 'warehouse_id', op: 'eq', value: more.warehouse_id },
       { column: 'assigned_to', op: 'eq', value: more.assigned_to }, { column: 'invoice_status', op: 'eq', value: more.invoice_status },
       { column: 'delivery_status', op: 'eq', value: more.delivery_status },
+      { column: 'category_ids', op: 'cs', value: more.category_id ? [more.category_id] : [] },
       { column: 'downloaded_at', op: 'gte', value: more.from ? `${more.from}T00:00:00+02:00` : '' },
       { column: 'downloaded_at', op: 'lte', value: more.to ? `${more.to}T23:59:59+02:00` : '' });
     return f;
@@ -166,7 +176,10 @@ export function WorkOrdersPage() {
   const to = Math.min(total, (page + 1) * pageSize);
 
   const toggleSort = (column: string) => setSort((s) => (s.column === column ? { column, desc: !s.desc } : { column, desc: false }));
-  const switchTab = (key: string) => { setParams({ tab: key }); setColFilters({}); setPage(0); };
+  const switchTab = (key: string) => {
+    setParams({ tab: key }); setColFilters({}); setPage(0);
+    setSort(TABS.find((t) => t.key === key)?.sort ?? { column: 'downloaded_at', desc: true });
+  };
 
   const exportRows = async () => {
     setExporting(true);
@@ -191,7 +204,8 @@ export function WorkOrdersPage() {
         </>} />
 
       {showMore && (
-        <div className="mb-4 grid gap-2 rounded-md border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="mb-4 grid gap-2 rounded-md border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+          <Select aria-label="Device type" value={more.category_id ?? ''} onChange={(e) => setMore({ ...more, category_id: e.target.value })} placeholder="All device types" options={opts(categories, (c) => c.name)} />
           <Select aria-label="District" value={more.district_id ?? ''} onChange={(e) => setMore({ ...more, district_id: e.target.value })} placeholder="All districts" options={opts(districts, (d) => d.name)} />
           <Select aria-label="Warehouse" value={more.warehouse_id ?? ''} onChange={(e) => setMore({ ...more, warehouse_id: e.target.value })} placeholder="All warehouses" options={opts(warehouses, (w) => w.code)} />
           <Select aria-label="Assigned user" value={more.assigned_to ?? ''} onChange={(e) => setMore({ ...more, assigned_to: e.target.value })} placeholder="Any assignee" options={opts(users, (u) => u.full_name)} />
@@ -256,7 +270,7 @@ export function WorkOrdersPage() {
                       </th>
                     );
                   })}
-                  <th scope="col" className="border-l border-slate-200 px-2 py-2 text-left align-bottom font-semibold">Actions</th>
+                  <th scope="col" className="border-l border-slate-200 px-2 py-2 text-left align-bottom font-semibold">{tab.actionLabel ?? 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className={cn(q.isFetching && 'opacity-70')}>
