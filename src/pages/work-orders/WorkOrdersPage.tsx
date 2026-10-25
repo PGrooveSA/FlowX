@@ -23,7 +23,8 @@ export type WorkOrderRow = Record<string, unknown> & {
   open_discrepancies: number; assigned_to_name: string | null; invoice_numbers: string | null; dispatch_numbers: string | null;
 };
 type ListRow = WorkOrderRow & { province_code: string; downloaded_at: string; updated_at: string; device_count: number; description: string | null;
-  device_names: string | null; started_at: string | null; allocated_clusters: string | null; invoice_required: boolean };
+  device_names: string | null; started_at: string | null; allocated_clusters: string | null; invoice_required: boolean;
+  issuing_completed_at: string | null; first_dispatched_at: string | null; updated_by_name: string | null };
 
 // Columns shown per tab; tabs without their own layout use DEFAULT_COLUMNS.
 const DEFAULT_COLUMNS = ['wo_number', 'downloaded_at', 'province_code', 'emis_number', 'institution_name', 'description', 'recipient_type', 'category_names', 'device_count', 'work_order_type_name'];
@@ -44,10 +45,33 @@ const TABS: { key: string; label: string; statuses: string[]; description: strin
   { key: 'completed', label: 'Completed', statuses: ['delivered', 'completed'],
     description: 'This is a list of Work Orders that have been delivered and completed.' },
   { key: 'dispatched', label: 'Dispatched', statuses: ['partially_dispatched', 'dispatched', 'partially_delivered'],
-    description: 'This is a list of Work Orders that have been dispatched and are awaiting delivery confirmation.' },
+    description: 'This is a list of dispatched Work Orders.',
+    columns: ['wo_number', 'issuing_completed_at', 'scheduled_date', 'first_dispatched_at', 'updated_by_name', 'province_code', 'emis_number',
+      'institution_name', 'description', 'recipient_type', 'category_names', 'device_names', 'work_order_type_name'],
+    sort: { column: 'first_dispatched_at', desc: true } },
 ];
 
 type Column = GridColumn<ListRow>;
+
+/** Dispatched tab menu: the work order's record, its devices and delivery follow-up. */
+function DispatchedRowActions({ row }: { row: ListRow }) {
+  const { can } = useAuth();
+  const nav = useNavigate();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" aria-label={`More actions for ${row.wo_number}`} title="More actions" className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
+          <MoreVertical className="h-6 w-6" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onSelect={() => nav(`/work-orders/${row.id}/details`)}>Devices and boxes</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => window.open(`/print/work-order/${row.id}`, '_blank', 'noopener')}>Print work order</DropdownMenuItem>
+        {can('delivery.view') && <DropdownMenuItem onSelect={() => nav('/delivery')}>Delivery confirmation</DropdownMenuItem>}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 /** Issued tab actions: allocated devices (issuing view) and a menu of the next permitted steps. */
 function IssuedRowActions({ row }: { row: ListRow }) {
@@ -111,6 +135,10 @@ export function WorkOrdersPage() {
     { key: 'wo_number', label: 'Work Order Number', sort: 'wo_number', filter: { type: 'text', column: 'wo_number' }, render: (r) => r.wo_number },
     { key: 'downloaded_at', label: 'Downloaded Date', sort: 'downloaded_at', filter: { type: 'date', column: 'downloaded_at' }, render: (r) => formatDateNumeric(r.downloaded_at) },
     { key: 'updated_at', label: 'Updated Date', sort: 'updated_at', filter: { type: 'date', column: 'updated_at' }, render: (r) => formatDateNumeric(r.updated_at) },
+    { key: 'issuing_completed_at', label: 'Date Completed', sort: 'issuing_completed_at', filter: { type: 'date', column: 'issuing_completed_at' }, render: (r) => formatDateNumeric(r.issuing_completed_at) },
+    { key: 'scheduled_date', label: 'Expected Dispatch Date', sort: 'scheduled_date', filter: { type: 'date', column: 'scheduled_date' }, render: (r) => formatDateNumeric(r.scheduled_date) },
+    { key: 'first_dispatched_at', label: 'Date Dispatched', sort: 'first_dispatched_at', filter: { type: 'date', column: 'first_dispatched_at' }, render: (r) => formatDateNumeric(r.first_dispatched_at) },
+    { key: 'updated_by_name', label: 'Updated By', sort: 'updated_by_name', filter: { type: 'text', column: 'updated_by_name' }, render: (r) => r.updated_by_name ?? '' },
     { key: 'started_at', label: 'Started Date', sort: 'started_at', filter: { type: 'date', column: 'started_at' }, render: (r) => formatDateNumeric(r.started_at) },
     { key: 'allocated_clusters', label: 'Allocated Clusters', sort: 'allocated_clusters', filter: { type: 'text', column: 'allocated_clusters' }, render: (r) => r.allocated_clusters ?? '' },
     { key: 'priority', label: 'Priority', sort: 'priority', filter: { type: 'select', column: 'priority', options: PRIORITIES.map((p) => ({ value: p, label: labelize(p) })) }, render: (r) => labelize(r.priority) },
@@ -132,7 +160,9 @@ export function WorkOrdersPage() {
   };
   const columns = (tab.columns ?? DEFAULT_COLUMNS).map((k) => {
     const c = catalog.find((x) => x.key === k)!;
-    return tab.key === 'issued' ? { ...c, ...issuedOverrides[k] } : c;
+    if (tab.key === 'issued') return { ...c, ...issuedOverrides[k] };
+    if (tab.key === 'dispatched' && k === 'emis_number') return { ...c, label: 'EMIS' };
+    return c;
   });
 
   const filters = useMemo<Filter[]>(() => {
@@ -252,6 +282,7 @@ export function WorkOrdersPage() {
                           <ClipboardList className="h-6 w-6" />
                         </Link>
                         {tab.key === 'issued' && <IssuedRowActions row={r} />}
+                        {tab.key === 'dispatched' && <DispatchedRowActions row={r} />}
                       </div>
                     </td>
                   </tr>
