@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/badge';
 import { Field, Input, Select, Textarea } from '@/components/ui/form-controls';
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
-import { EmptyState, ErrorState, KeyValue, LoadingState, PageHeader, useDebounce } from '@/components/common';
+import { ConfirmDialog, EmptyState, ErrorState, KeyValue, LoadingState, PageHeader, useDebounce } from '@/components/common';
 import { AttachmentsPanel } from '@/components/common/Attachments';
 
 type Row = Record<string, string>;
@@ -153,10 +153,19 @@ export function RepairDetailPage() {
   });
   const [target, setTarget] = useState<string | null>(null);
   const [partOpen, setPartOpen] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   if (q.isLoading) return <LoadingState />;
   const r = q.data?.repair;
   if (!r) return <ErrorState error={new Error('Repair not found')} />;
   const decide = can('repairs.approve') && r.status === 'awaiting_approval';
+  const rejectDialog = (
+    <ConfirmDialog open={rejecting} onOpenChange={setRejecting} title={`Reject repair ${r.repair_number}`} reasonLabel="Reason" destructive
+      description="The repair is cancelled and the device stays faulty."
+      onConfirm={async (reason) => {
+        try { await rpc('decide_repair_approval', { p_repair_id: r.id, p_approve: false, p_comment: reason }); toast.success('Repair rejected'); void q.refetch(); }
+        catch (e) { toast.error((e as Error).message); throw e; }
+      }} />
+  );
 
   return (
     <div className="space-y-4">
@@ -165,6 +174,7 @@ export function RepairDetailPage() {
         actions={<>
           {decide && <>
             <Button size="sm" onClick={async () => { try { await rpc('decide_repair_approval', { p_repair_id: r.id, p_approve: true, p_comment: null }); toast.success('Repair approved'); void q.refetch(); } catch (e) { toast.error((e as Error).message); } }}>Approve cost</Button>
+            <Button size="sm" variant="outline" onClick={() => setRejecting(true)}>Reject</Button>
           </>}
           {!decide && q.data!.transitions.filter((t) => can(t.permission_code) && !(r.status === 'quality_check' && t.to_status === 'under_repair')).map((t) => (
             <Button key={t.to_status} size="sm" variant={t.to_status === 'cancelled' ? 'destructive' : 'default'} onClick={() => setTarget(t.to_status)}>{NEXT_LABEL[t.to_status] ?? labelize(t.to_status)}</Button>))}
@@ -195,6 +205,7 @@ export function RepairDetailPage() {
       <AttachmentsPanel entityType="repair" entityId={r.id} title="Before / after photographs and documents" />
       {target && <AdvanceDialog repairId={r.id} target={target} onClose={() => setTarget(null)} onDone={() => void q.refetch()} />}
       {partOpen && <PartDialog repairId={r.id} onClose={() => setPartOpen(false)} onDone={() => void q.refetch()} />}
+      {rejectDialog}
     </div>
   );
 }

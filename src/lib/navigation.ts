@@ -1,6 +1,6 @@
 import {
-  LayoutDashboard, ClipboardList, CheckSquare, CalendarDays, Cpu, Warehouse, ArrowLeftRight, Stethoscope, Wrench,
-  PackageCheck, Receipt, Truck, ClipboardCheck, School, BarChart3, Bell, Users, ScrollText, Settings, Undo2, ShieldAlert,
+  LayoutDashboard, ClipboardList, Cpu, Warehouse, ArrowLeftRight, Stethoscope, Wrench,
+  PackageCheck, Receipt, Truck, ClipboardCheck, BarChart3, Bell, Users, ScrollText, Settings, Undo2, ShieldAlert,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -16,9 +16,6 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard, anyOf: ['dashboard.view'], group: 'Operations' },
   { label: 'Work Orders', to: '/work-orders', icon: ClipboardList, anyOf: ['work_orders.view'], group: 'Operations' },
-  { label: 'Approvals', to: '/approvals', icon: CheckSquare, anyOf: ['work_orders.approve', 'repairs.approve', 'inventory.adjust_approve'], group: 'Operations' },
-  { label: 'Scheduling', to: '/scheduling', icon: CalendarDays, anyOf: ['work_orders.schedule'], group: 'Operations' },
-  { label: 'Institutions', to: '/institutions', icon: School, anyOf: ['institutions.view'], group: 'Operations' },
   { label: 'Device Register', to: '/devices', icon: Cpu, anyOf: ['devices.view'], group: 'Warehouse' },
   { label: 'Warehouse Inventory', to: '/warehouse', icon: Warehouse, anyOf: ['inventory.view'], group: 'Warehouse' },
   { label: 'Stock Movements', to: '/movements', icon: ArrowLeftRight, anyOf: ['inventory.view'], group: 'Warehouse' },

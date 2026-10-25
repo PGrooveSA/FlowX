@@ -69,7 +69,7 @@ export function DashboardPage() {
         <StatCard label="Total work orders" value={n(wo.total)} icon={ClipboardList} to="/work-orders" />
         <StatCard label="Pending authorisation" value={n(wo.pending_authorisation)} tone={wo.pending_authorisation ? 'warning' : 'default'} icon={Clock} to="/work-orders?tab=pending_authorisation" />
         <StatCard label="Pending scheduling" value={n(wo.pending_scheduling)} icon={CalendarDays} to="/work-orders?tab=pending_scheduling" />
-        <StatCard label="Scheduled" value={n(wo.scheduled)} icon={CalendarDays} to="/scheduling" />
+        <StatCard label="Scheduled" value={n(wo.scheduled)} icon={CalendarDays} to="/work-orders?tab=issued" />
         <StatCard label="Pending issuing" value={n(wo.pending_issuing)} icon={PackageCheck} to="/issuing" />
         <StatCard label="Issued" value={n(wo.issued)} icon={PackageCheck} to="/work-orders?tab=completed" />
         <StatCard label="Pending dispatch" value={n(wo.pending_dispatch)} icon={Truck} to="/dispatch" />

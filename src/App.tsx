@@ -17,8 +17,6 @@ const WorkOrderDetailPage = page(() => import('@/pages/work-orders/WorkOrderDeta
 const WorkOrderViewPage = page(() => import('@/pages/work-orders/WorkOrderViewPage'), 'WorkOrderViewPage');
 const WorkOrderDetailsPage =page(() => import('@/pages/work-orders/WorkOrderDetailsPage'), 'WorkOrderDetailsPage');
 const WorkOrderImportPage =page(() => import('@/pages/work-orders/WorkOrderImportPage'), 'WorkOrderImportPage');
-const ApprovalsPage = page(() => import('@/pages/approvals/ApprovalsPage'), 'ApprovalsPage');
-const SchedulingPage = page(() => import('@/pages/scheduling/SchedulingPage'), 'SchedulingPage');
 const DeviceRegisterPage = page(() => import('@/pages/devices/DeviceRegisterPage'), 'DeviceRegisterPage');
 const DeviceDetailPage = page(() => import('@/pages/devices/DeviceDetailPage'), 'DeviceDetailPage');
 const DeviceImportPage = page(() => import('@/pages/devices/DeviceImportPage'), 'DeviceImportPage');
@@ -42,9 +40,7 @@ const DispatchDetailPage = page(() => import('@/pages/dispatch/DispatchPages'), 
 const DeliveryPage = page(() => import('@/pages/delivery/DeliveryPages'), 'DeliveryPage');
 const DeliveryRecordPage = page(() => import('@/pages/delivery/DeliveryPages'), 'DeliveryRecordPage');
 const RecipientConfirmPage = page(() => import('@/pages/delivery/RecipientConfirmPage'), 'RecipientConfirmPage');
-const InstitutionsPage = page(() => import('@/pages/institutions/InstitutionPages'), 'InstitutionsPage');
 const InstitutionDetailPage = page(() => import('@/pages/institutions/InstitutionPages'), 'InstitutionDetailPage');
-const InstitutionImportPage = page(() => import('@/pages/institutions/InstitutionPages'), 'InstitutionImportPage');
 const ReportsPage = page(() => import('@/pages/reports/ReportsPage'), 'ReportsPage');
 const NotificationsPage = page(() => import('@/pages/notifications/NotificationsPage'), 'NotificationsPage');
 const AuditPage = page(() => import('@/pages/audit/AuditPage'), 'AuditPage');
@@ -102,8 +98,9 @@ export function App() {
           <Route path="work-orders/:id/view" element={guard(['work_orders.view'], <WorkOrderViewPage />)} />
           <Route path="work-orders/:id/details" element={guard(['work_orders.view'], <WorkOrderDetailsPage />)} />
           <Route path="work-orders/:id/edit" element={guard(['work_orders.create'], <WorkOrderFormPage />)} />
-          <Route path="approvals" element={guard(['work_orders.approve', 'repairs.approve', 'inventory.adjust_approve'], <ApprovalsPage />)} />
-          <Route path="scheduling" element={guard(['work_orders.schedule'], <SchedulingPage />)} />
+          {/* Approvals, Scheduling and the Institutions list were removed; old links (e.g. in notifications) land on the matching tab. */}
+          <Route path="approvals" element={<Navigate to="/work-orders?tab=pending_authorisation" replace />} />
+          <Route path="scheduling" element={<Navigate to="/work-orders?tab=pending_scheduling" replace />} />
           <Route path="devices" element={guard(['devices.view'], <DeviceRegisterPage />)} />
           <Route path="devices/import" element={guard(['devices.register'], <DeviceImportPage />)} />
           <Route path="devices/:id" element={guard(['devices.view'], <DeviceDetailPage />)} />
@@ -126,8 +123,7 @@ export function App() {
           <Route path="dispatch/:id" element={guard(['dispatch.view'], <DispatchDetailPage />)} />
           <Route path="delivery" element={guard(['delivery.view'], <DeliveryPage />)} />
           <Route path="delivery/:dispatchId" element={guard(['delivery.view'], <DeliveryRecordPage />)} />
-          <Route path="institutions" element={guard(['institutions.view'], <InstitutionsPage />)} />
-          <Route path="institutions/import" element={guard(['institutions.manage'], <InstitutionImportPage />)} />
+          <Route path="institutions" element={<Navigate to="/work-orders" replace />} />
           <Route path="institutions/:id" element={guard(['institutions.view'], <InstitutionDetailPage />)} />
           <Route path="reports" element={guard(['reports.view'], <ReportsPage />)} />
           <Route path="notifications" element={<NotificationsPage />} />

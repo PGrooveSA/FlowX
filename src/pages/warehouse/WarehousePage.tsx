@@ -16,7 +16,7 @@ import { StatusBadge, Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
 import { PageHeader } from '@/components/common';
-import { AdjustmentQueue } from '@/pages/approvals/ApprovalsPage';
+import { AdjustmentQueue } from './AdjustmentQueue';
 
 type Row = Record<string, unknown>;
 const c = createColumnHelper<Row>();

@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Edit, Plus, Upload } from 'lucide-react';
+import { Edit, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchAll, fetchOne, friendlyMessage, type Filter } from '@/lib/api';
+import { fetchAll, fetchOne, friendlyMessage } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { formatDate, labelize } from '@/lib/utils';
 import { RECIPIENT_TYPES } from '@/lib/status';
@@ -20,52 +20,12 @@ import { StatusBadge } from '@/components/ui/badge';
 import { Field, Input, Select } from '@/components/ui/form-controls';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
-import { EmptyState, ErrorState, KeyValue, LoadingState, PageHeader, useDebounce } from '@/components/common';
-import { ImportWizard, markFileDuplicates, type ValidatedRow } from '@/components/common/ImportWizard';
+import { EmptyState, ErrorState, KeyValue, LoadingState, PageHeader } from '@/components/common';
 import { AttachmentsPanel } from '@/components/common/Attachments';
 
 type Row = Record<string, string>;
 const c = createColumnHelper<Row>();
 const INSTITUTION_TYPES = ['school', 'district_office', 'department', 'tvet_college', 'special_school', 'other'];
-
-export function InstitutionsPage() {
-  const nav = useNavigate();
-  const { can } = useAuth();
-  const [search, setSearch] = useState('');
-  const [f, setF] = useState<Record<string, string>>({ status: 'active' });
-  const debounced = useDebounce(search);
-  const provinces = useProvinces().data;
-  const districts = useDistricts().data;
-  const [open, setOpen] = useState(false);
-  const filters = useMemo<Filter[]>(() => [{ column: 'status', op: 'eq', value: f.status }, { column: 'province_id', op: 'eq', value: f.province_id },
-    { column: 'district_id', op: 'eq', value: f.district_id }, { column: 'institution_type', op: 'eq', value: f.type }], [f]);
-  return (
-    <div>
-      <PageHeader title="Institutions and Recipients" crumbs={[{ label: 'Institutions' }]} description="EMIS numbers are unique; duplicates are rejected."
-        actions={<>
-          {can('institutions.manage') && can('data.import') && <Button variant="outline" asChild><Link to="/institutions/import"><Upload /> Import</Link></Button>}
-          {can('institutions.manage') && <Button onClick={() => setOpen(true)}><Plus /> New institution</Button>}
-        </>} />
-      <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        <Input aria-label="Search" placeholder="Name, EMIS, town…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <Select aria-label="Province" value={f.province_id ?? ''} onChange={(e) => setF({ ...f, province_id: e.target.value, district_id: '' })} placeholder="All provinces" options={opts(provinces, (p) => p.name)} />
-        <Select aria-label="District" value={f.district_id ?? ''} onChange={(e) => setF({ ...f, district_id: e.target.value })} placeholder="All districts" options={opts(districts?.filter((d) => !f.province_id || d.province_id === f.province_id), (d) => d.name)} />
-        <Select aria-label="Type" value={f.type ?? ''} onChange={(e) => setF({ ...f, type: e.target.value })} placeholder="All types" options={INSTITUTION_TYPES.map((t) => ({ value: t, label: labelize(t) }))} />
-        <Select aria-label="Status" value={f.status ?? ''} onChange={(e) => setF({ ...f, status: e.target.value })} placeholder="Any status" options={['active', 'inactive', 'closed'].map((t) => ({ value: t, label: labelize(t) }))} />
-      </div>
-      <ServerDataTable<Row> source="institutions" select="*, provinces(name), districts(name)" queryKey={['institutions']} filters={filters} search={debounced}
-        searchColumns={['name', 'emis_number', 'town']} defaultSort={{ column: 'name', desc: false }} onRowClick={(r) => nav(`/institutions/${r.id}`)} exportName="institutions"
-        columns={[c.accessor('name', { header: 'Institution', cell: (x) => <Link className="font-medium text-primary hover:underline" to={`/institutions/${x.row.original.id}`}>{x.getValue()}</Link> }),
-          c.accessor('emis_number', { header: 'EMIS', cell: (x) => <span className="mono">{x.getValue()}</span> }), c.accessor('institution_type', { header: 'Type', cell: (x) => labelize(x.getValue()) }),
-          c.accessor((r) => (r.provinces as unknown as { name: string }).name, { id: 'province', header: 'Province', enableSorting: false }),
-          c.accessor((r) => (r.districts as unknown as { name: string }).name, { id: 'district', header: 'District', enableSorting: false }),
-          c.accessor('town', { header: 'Town' }), c.accessor('phone', { header: 'Phone' }), c.accessor('principal_name', { header: 'Principal / contact' }),
-          c.accessor('status', { header: 'Status', cell: (x) => <StatusBadge status={x.getValue()} /> })]}
-        exportColumns={['emis_number', 'name', 'institution_type', 'phase', 'town', 'postal_code', 'address_line1', 'phone', 'email', 'principal_name', 'status'].map((k) => ({ header: k, value: (r: Row) => r[k] }))} />
-      {open && <InstitutionDialog onClose={() => setOpen(false)} />}
-    </div>
-  );
-}
 
 const institutionSchema = z.object({
   emis_number: z.string().trim().regex(/^[0-9A-Za-z-]{5,20}$/, 'EMIS number must be 5–20 letters/digits'),
@@ -138,7 +98,7 @@ export function InstitutionDetailPage() {
   if (!i) return <ErrorState error={new Error('Institution not found')} />;
   return (
     <div className="space-y-4">
-      <PageHeader title={i.name} crumbs={[{ label: 'Institutions', to: '/institutions' }, { label: i.name }]}
+      <PageHeader title={i.name} crumbs={[{ label: 'Work Orders', to: '/work-orders' }, { label: i.name }]}
         description={<span className="flex items-center gap-2"><StatusBadge status={i.status} /> EMIS <span className="mono">{i.emis_number}</span></span>}
         actions={can('institutions.manage') && <Button variant="outline" onClick={() => setEdit(true)}><Edit /> Edit</Button>} />
       <Tabs defaultValue="overview">
@@ -231,67 +191,5 @@ function ContactDialog({ institutionId, onClose, onDone }: { institutionId: stri
           }}>Add</Button></DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-const TEMPLATE = 'emis_number,name,institution_type,province_code,district_code,address_line1,town,postal_code,phone,email,principal_name\n900999001,Example Primary School,school,GP,GP-JN,1 Example Road,Johannesburg,2001,+27 11 000 0000,office@example.org,Ms Example\n';
-
-export function InstitutionImportPage() {
-  const provinces = useProvinces().data;
-  const districts = useDistricts().data;
-  const [mode, setMode] = useState<'skip' | 'update'>('skip');
-  if (!provinces || !districts) return <LoadingState />;
-
-  const validate = async (rows: Record<string, string>[], onProgress: (p: number) => void): Promise<ValidatedRow[]> => {
-    const emis = rows.map((r) => r.emis_number?.trim().toUpperCase()).filter(Boolean);
-    const existing = new Set<string>();
-    for (let i = 0; i < emis.length; i += 300) {
-      const { data } = await supabase.from('institutions').select('emis_number').in('emis_number', emis.slice(i, i + 300));
-      (data ?? []).forEach((x) => existing.add(x.emis_number.toUpperCase()));
-      onProgress(Math.round(((i + 300) / Math.max(1, emis.length)) * 100));
-    }
-    const validated = rows.map((r, i) => {
-      const errors: string[] = [];
-      const prov = provinces.find((p) => p.code === r.province_code?.toUpperCase());
-      const dist = districts.find((d) => d.code === r.district_code?.toUpperCase());
-      if (!/^[0-9A-Za-z-]{5,20}$/.test(r.emis_number ?? '')) errors.push('Invalid EMIS number');
-      if (!r.name || r.name.length < 3) errors.push('Name is required');
-      if (!prov) errors.push('Unknown province code');
-      if (!dist || dist.province_id !== prov?.id) errors.push('Unknown district code for the province');
-      if (r.institution_type && !INSTITUTION_TYPES.includes(r.institution_type)) errors.push('Invalid institution type');
-      if (existing.has(r.emis_number?.toUpperCase()) && mode === 'skip') errors.push('EMIS number already exists (duplicate)');
-      return { row: i + 2, data: { ...r, province_id: prov?.id ?? '', district_id: dist?.id ?? '', _exists: existing.has(r.emis_number?.toUpperCase()) ? '1' : '' }, errors };
-    });
-    return markFileDuplicates(validated, (r) => r.data.emis_number?.toUpperCase(), 'EMIS number');
-  };
-  const commit = async (rows: ValidatedRow[], onProgress: (p: number) => void) => {
-    let created = 0; const messages: string[] = [];
-    const fields = ['emis_number', 'name', 'institution_type', 'province_id', 'district_id', 'address_line1', 'town', 'postal_code', 'phone', 'email', 'principal_name'];
-    for (let i = 0; i < rows.length; i += 200) {
-      const part = rows.slice(i, i + 200);
-      const toPayload = (r: ValidatedRow) => Object.fromEntries(fields.map((k) => [k, r.data[k] || (k === 'institution_type' ? 'school' : null)]));
-      const inserts = part.filter((r) => !r.data._exists).map(toPayload);
-      if (inserts.length) {
-        const { error } = await supabase.from('institutions').insert(inserts);
-        if (error) messages.push(`Rows ${part[0].row}–${part[part.length - 1].row}: ${friendlyMessage(error)}`); else created += inserts.length;
-      }
-      for (const r of part.filter((x) => x.data._exists)) {
-        const { emis_number, ...rest } = toPayload(r);
-        const { error } = await supabase.from('institutions').update(rest).eq('emis_number', emis_number as string);
-        if (error) messages.push(`Row ${r.row}: ${friendlyMessage(error)}`); else created++;
-      }
-      onProgress(Math.round(((i + part.length) / rows.length) * 100));
-    }
-    return { created, failed: messages.length, messages };
-  };
-  return (
-    <div className="mx-auto max-w-6xl">
-      <PageHeader title="Import institutions" crumbs={[{ label: 'Institutions', to: '/institutions' }, { label: 'Import' }]} description="Validated against existing EMIS numbers, provinces and districts before anything is saved." />
-      <ImportWizard requiredColumns={['emis_number', 'name', 'province_code', 'district_code']} optionalColumns={['institution_type', 'address_line1', 'town', 'postal_code', 'phone', 'email', 'principal_name']}
-        template={TEMPLATE} templateName="institution-import-template.csv" validate={validate} commit={commit}>
-        <Field label="Existing EMIS numbers" htmlFor="imode"><Select id="imode" value={mode} onChange={(e) => setMode(e.target.value as 'skip' | 'update')}
-          options={[{ value: 'skip', label: 'Reject as duplicates' }, { value: 'update', label: 'Update the existing institution (authorised update)' }]} /></Field>
-      </ImportWizard>
-    </div>
   );
 }
