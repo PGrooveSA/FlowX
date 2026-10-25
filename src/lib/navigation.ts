@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, ClipboardList, Cpu, Warehouse, ArrowLeftRight, Stethoscope, Wrench,
-  PackageCheck, Receipt, Truck, ClipboardCheck, BarChart3, Bell, Users, ScrollText, Settings, Undo2, ShieldAlert,
+  Receipt, Truck, ClipboardCheck, BarChart3, Bell, Users, ScrollText, Settings, Undo2, ShieldAlert,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -19,7 +19,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Device Register', to: '/devices', icon: Cpu, anyOf: ['devices.view'], group: 'Warehouse' },
   { label: 'Warehouse Inventory', to: '/warehouse', icon: Warehouse, anyOf: ['inventory.view'], group: 'Warehouse' },
   { label: 'Stock Movements', to: '/movements', icon: ArrowLeftRight, anyOf: ['inventory.view'], group: 'Warehouse' },
-  { label: 'Allocations & Issuing', to: '/issuing', icon: PackageCheck, anyOf: ['issuing.pick', 'issuing.confirm', 'inventory.reserve'], group: 'Warehouse' },
   { label: 'Device Assessments', to: '/assessments', icon: Stethoscope, anyOf: ['assessments.view'], group: 'Warehouse' },
   { label: 'Repairs', to: '/repairs', icon: Wrench, anyOf: ['assessments.view'], group: 'Warehouse' },
   { label: 'Returns', to: '/returns', icon: Undo2, anyOf: ['returns.manage'], group: 'Warehouse' },

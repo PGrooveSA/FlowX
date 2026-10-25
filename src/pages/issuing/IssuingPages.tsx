@@ -1,45 +1,17 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { createColumnHelper } from '@tanstack/react-table';
 import { AlertOctagon, CheckCircle2, RefreshCw, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 import { rpc, type ScanResult } from '@/lib/api';
-import { formatDate, labelize } from '@/lib/utils';
+import { labelize } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { ServerDataTable } from '@/components/data-table/ServerDataTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { StatusBadge, Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badge';
 import { Field, Input, Select } from '@/components/ui/form-controls';
 import { ConfirmDialog, EmptyState, ErrorState, KeyValue, LoadingState, PageHeader, ScanInput, ScanLog, type ScanLogEntry } from '@/components/common';
 import { useWorkOrder } from '@/pages/work-orders/WorkOrderDetailPage';
-import type { WorkOrderRow } from '@/pages/work-orders/WorkOrdersPage';
-
-const col = createColumnHelper<WorkOrderRow>();
-
-export function IssuingQueuePage() {
-  const nav = useNavigate();
-  return (
-    <div>
-      <PageHeader title="Allocations & Issuing" crumbs={[{ label: 'Issuing' }]} description="Work orders released to the warehouse. Every device must be verified by its physical serial number." />
-      <ServerDataTable<WorkOrderRow> source="v_work_orders" queryKey={['work-orders', 'issuing']}
-        filters={[{ column: 'status', op: 'in', value: ['scheduled', 'scheduled_pending_issuing', 'issuing_in_progress'] }]}
-        defaultSort={{ column: 'scheduled_date', desc: false }} onRowClick={(r) => nav(`/issuing/${r.id}`)} emptyTitle="Nothing waiting to be issued"
-        columns={[
-          col.accessor('wo_number', { header: 'Work order', cell: (c) => <Link className="mono text-primary hover:underline" to={`/issuing/${c.row.original.id}`}>{c.getValue()}</Link> }),
-          col.accessor('status', { header: 'Status', cell: (c) => <StatusBadge status={c.getValue()} kind="wo" /> }),
-          col.accessor('scheduled_date', { header: 'Scheduled', cell: (c) => formatDate(c.getValue()) }),
-          col.accessor('priority', { header: 'Priority', cell: (c) => <Badge tone={c.getValue() === 'urgent' ? 'red' : c.getValue() === 'high' ? 'amber' : 'gray'}>{c.getValue()}</Badge> }),
-          col.accessor('warehouse_code', { header: 'Warehouse' }), col.accessor('institution_name', { header: 'Institution' }),
-          col.accessor('category_names', { header: 'Devices', enableSorting: false }),
-          col.display({ id: 'progress', header: 'Issued / approved', cell: (c) => `${c.row.original.total_issued} / ${c.row.original.total_approved}` }),
-          col.accessor('open_discrepancies', { header: 'Discrepancies', enableSorting: false, cell: (c) => Number(c.getValue()) > 0 ? <Badge tone="red">{c.getValue() as number}</Badge> : '—' }),
-          col.accessor('assigned_to_name', { header: 'Assigned', cell: (c) => c.getValue() ?? '—' }),
-        ]} />
-    </div>
-  );
-}
 
 export function IssuingWorkspacePage() {
   const { id } = useParams();
@@ -76,7 +48,7 @@ export function IssuingWorkspacePage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={`Issuing — ${wo.wo_number}`} crumbs={[{ label: 'Issuing', to: '/issuing' }, { label: wo.wo_number }]}
+      <PageHeader title={`Issuing — ${wo.wo_number}`} crumbs={[{ label: 'Work Orders', to: '/work-orders?tab=issued' }, { label: wo.wo_number }]}
         description={<span className="flex flex-wrap items-center gap-2"><StatusBadge status={wo.status} kind="wo" /> {wo.institution_name} · EMIS {wo.emis_number} · {wo.warehouse_code}</span>}
         actions={<>
           <Button variant="outline" size="sm" asChild><Link to={`/work-orders/${wo.id}`}>Work order</Link></Button>

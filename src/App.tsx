@@ -24,7 +24,6 @@ const WarehousePage = page(() => import('@/pages/warehouse/WarehousePage'), 'War
 const GoodsReceiptPage = page(() => import('@/pages/warehouse/GoodsReceiptPage'), 'GoodsReceiptPage');
 const StockCountPage = page(() => import('@/pages/warehouse/StockCountPage'), 'StockCountPage');
 const MovementsPage = page(() => import('@/pages/warehouse/MovementsPage'), 'MovementsPage');
-const IssuingQueuePage = page(() => import('@/pages/issuing/IssuingPages'), 'IssuingQueuePage');
 const IssuingWorkspacePage = page(() => import('@/pages/issuing/IssuingPages'), 'IssuingWorkspacePage');
 const AssessmentsPage = page(() => import('@/pages/repairs/RepairPages'), 'AssessmentsPage');
 const RepairsPage = page(() => import('@/pages/repairs/RepairPages'), 'RepairsPage');
@@ -108,7 +107,7 @@ export function App() {
           <Route path="warehouse/receiving/:id" element={guard(['inventory.view'], <GoodsReceiptPage />)} />
           <Route path="warehouse/counts/:id" element={guard(['inventory.view'], <StockCountPage />)} />
           <Route path="movements" element={guard(['inventory.view'], <MovementsPage />)} />
-          <Route path="issuing" element={guard(['issuing.pick', 'issuing.confirm', 'inventory.reserve'], <IssuingQueuePage />)} />
+          <Route path="issuing" element={<Navigate to="/work-orders?tab=issued" replace />} />
           <Route path="issuing/:id" element={guard(['issuing.pick', 'issuing.confirm', 'inventory.reserve'], <IssuingWorkspacePage />)} />
           <Route path="assessments" element={guard(['assessments.view'], <AssessmentsPage />)} />
           <Route path="assessments/:id" element={guard(['assessments.view'], <AssessmentDetailPage />)} />
