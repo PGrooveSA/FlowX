@@ -71,10 +71,10 @@ export function DashboardPage() {
         <StatCard label="Pending scheduling" value={n(wo.pending_scheduling)} icon={CalendarDays} to="/work-orders?tab=pending_scheduling" />
         <StatCard label="Scheduled" value={n(wo.scheduled)} icon={CalendarDays} to="/scheduling" />
         <StatCard label="Pending issuing" value={n(wo.pending_issuing)} icon={PackageCheck} to="/issuing" />
-        <StatCard label="Issued" value={n(wo.issued)} icon={PackageCheck} to="/work-orders?tab=issued" />
+        <StatCard label="Issued" value={n(wo.issued)} icon={PackageCheck} to="/work-orders?tab=completed" />
         <StatCard label="Pending dispatch" value={n(wo.pending_dispatch)} icon={Truck} to="/dispatch" />
         <StatCard label="Dispatched / in delivery" value={n(wo.dispatched)} icon={Truck} to="/work-orders?tab=dispatched" />
-        <StatCard label="Completed" value={n(wo.completed)} tone="success" icon={CheckCircle2} to="/work-orders?tab=completed" />
+        <StatCard label="Completed" value={n(wo.completed)} tone="success" icon={CheckCircle2} to="/work-orders?tab=dispatched" />
         <StatCard label="Pending delivery confirmation" value={n(s.deliveries_pending)} icon={Truck} to="/delivery" />
       </section>
 

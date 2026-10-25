@@ -24,7 +24,7 @@ export type WorkOrderRow = Record<string, unknown> & {
 };
 type ListRow = WorkOrderRow & { province_code: string; downloaded_at: string; updated_at: string; device_count: number; description: string | null;
   device_names: string | null; started_at: string | null; allocated_clusters: string | null; invoice_required: boolean;
-  issuing_completed_at: string | null; first_dispatched_at: string | null; updated_by_name: string | null };
+  issuing_completed_at: string | null; first_dispatched_at: string | null; updated_by_name: string | null; updated_by_email: string | null };
 
 // Columns shown per tab; tabs without their own layout use DEFAULT_COLUMNS.
 const DEFAULT_COLUMNS = ['wo_number', 'downloaded_at', 'province_code', 'emis_number', 'institution_name', 'description', 'recipient_type', 'category_names', 'device_count', 'work_order_type_name'];
@@ -36,15 +36,17 @@ const TABS: { key: string; label: string; statuses: string[]; description: strin
     description: 'This is a list of Work Orders that are currently waiting for scheduling.',
     columns: ['wo_number', 'updated_at', 'province_code', 'emis_number', 'institution_name', 'description', 'priority', 'recipient_type', 'category_names', 'device_names', 'device_count', 'work_order_type_name'],
     sort: { column: 'updated_at', desc: true }, actionLabel: 'Action' },
-  // Scheduled work orders are "issued for processing" to the warehouse, so the Issued tab
-  // covers everything from scheduling until dispatch (there is no separate issuing tab).
-  { key: 'issued', label: 'Issued', statuses: ['scheduled', 'scheduled_pending_issuing', 'issuing_in_progress', 'issued', 'pending_invoicing', 'invoiced', 'ready_for_dispatch'],
+  // Scheduled work orders are "issued for processing" to the warehouse; once every approved
+  // device is issued the work order is "Completed" (awaiting invoicing/dispatch), then "Dispatched".
+  { key: 'issued', label: 'Issued', statuses: ['scheduled', 'scheduled_pending_issuing', 'issuing_in_progress'],
     description: 'This is a list of Work Orders that have been issued for processing.',
     columns: ['wo_number', 'started_at', 'province_code', 'emis_number', 'institution_name', 'description', 'recipient_type', 'device_count', 'category_names', 'work_order_type_name', 'allocated_clusters'],
     sort: { column: 'started_at', desc: true }, actionLabel: 'Action' },
-  { key: 'completed', label: 'Completed', statuses: ['delivered', 'completed'],
-    description: 'This is a list of Work Orders that have been delivered and completed.' },
-  { key: 'dispatched', label: 'Dispatched', statuses: ['partially_dispatched', 'dispatched', 'partially_delivered'],
+  { key: 'completed', label: 'Completed', statuses: ['issued', 'pending_invoicing', 'invoiced', 'ready_for_dispatch'],
+    description: 'This is a list of completed Work Orders.',
+    columns: ['wo_number', 'issuing_completed_at', 'updated_by_email', 'province_code', 'emis_number', 'institution_name', 'description', 'recipient_type', 'device_count', 'category_names', 'work_order_type_name'],
+    sort: { column: 'issuing_completed_at', desc: true } },
+  { key: 'dispatched', label: 'Dispatched', statuses: ['partially_dispatched', 'dispatched', 'partially_delivered', 'delivered', 'completed'],
     description: 'This is a list of dispatched Work Orders.',
     columns: ['wo_number', 'issuing_completed_at', 'scheduled_date', 'first_dispatched_at', 'updated_by_name', 'province_code', 'emis_number',
       'institution_name', 'description', 'recipient_type', 'category_names', 'device_names', 'work_order_type_name'],
@@ -139,6 +141,7 @@ export function WorkOrdersPage() {
     { key: 'scheduled_date', label: 'Expected Dispatch Date', sort: 'scheduled_date', filter: { type: 'date', column: 'scheduled_date' }, render: (r) => formatDateNumeric(r.scheduled_date) },
     { key: 'first_dispatched_at', label: 'Date Dispatched', sort: 'first_dispatched_at', filter: { type: 'date', column: 'first_dispatched_at' }, render: (r) => formatDateNumeric(r.first_dispatched_at) },
     { key: 'updated_by_name', label: 'Updated By', sort: 'updated_by_name', filter: { type: 'text', column: 'updated_by_name' }, render: (r) => r.updated_by_name ?? '' },
+    { key: 'updated_by_email', label: 'Updated By', sort: 'updated_by_email', filter: { type: 'text', column: 'updated_by_email' }, render: (r) => r.updated_by_email ?? '' },
     { key: 'started_at', label: 'Started Date', sort: 'started_at', filter: { type: 'date', column: 'started_at' }, render: (r) => formatDateNumeric(r.started_at) },
     { key: 'allocated_clusters', label: 'Allocated Clusters', sort: 'allocated_clusters', filter: { type: 'text', column: 'allocated_clusters' }, render: (r) => r.allocated_clusters ?? '' },
     { key: 'priority', label: 'Priority', sort: 'priority', filter: { type: 'select', column: 'priority', options: PRIORITIES.map((p) => ({ value: p, label: labelize(p) })) }, render: (r) => labelize(r.priority) },
@@ -161,7 +164,7 @@ export function WorkOrdersPage() {
   const columns = (tab.columns ?? DEFAULT_COLUMNS).map((k) => {
     const c = catalog.find((x) => x.key === k)!;
     if (tab.key === 'issued') return { ...c, ...issuedOverrides[k] };
-    if (tab.key === 'dispatched' && k === 'emis_number') return { ...c, label: 'EMIS' };
+    if ((tab.key === 'dispatched' || tab.key === 'completed') && k === 'emis_number') return { ...c, label: 'EMIS' };
     return c;
   });
 
@@ -277,11 +280,11 @@ export function WorkOrdersPage() {
                     {columns.map((c) => <td key={c.key} className="px-2 py-3">{c.render(r)}</td>)}
                     <td className="px-2 py-2 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <Link to={tab.key === 'issued' ? `/work-orders/${r.id}/details` : `/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order"
+                        <Link to={tab.key === 'issued' || tab.key === 'completed' ? `/work-orders/${r.id}/details` : `/work-orders/${r.id}`} aria-label={`Open ${r.wo_number}`} title="View work order"
                           className="inline-flex rounded p-1 text-primary hover:bg-primary/10">
                           <ClipboardList className="h-6 w-6" />
                         </Link>
-                        {tab.key === 'issued' && <IssuedRowActions row={r} />}
+                        {(tab.key === 'issued' || tab.key === 'completed') && <IssuedRowActions row={r} />}
                         {tab.key === 'dispatched' && <DispatchedRowActions row={r} />}
                       </div>
                     </td>
