@@ -46,7 +46,7 @@ export function DeviceImportPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader title="Import devices" crumbs={[{ label: 'Device Register', to: '/devices' }, { label: 'Import' }]}
+      <PageHeader title="Import devices" crumbs={[{ label: 'Receiving', to: '/devices' }, { label: 'Import' }]}
         description="Rows are validated by the server (duplicates, models, IMEIs) before anything is saved. Large files are processed in chunks of 500." />
       <ImportWizard requiredColumns={['model_code', 'serial_number']} optionalColumns={['imei', 'condition', 'asset_tag', 'purchase_date', 'notes']}
         template={TEMPLATE} templateName="device-import-template.csv" validate={validate} commit={commit}>

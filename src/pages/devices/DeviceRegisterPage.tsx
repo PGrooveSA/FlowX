@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Printer, ScanBarcode, Upload } from 'lucide-react';
+import { Package, Plus, Printer, ScanBarcode, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { rpc, type Filter } from '@/lib/api';
 import { formatDate, labelize } from '@/lib/utils';
@@ -18,6 +18,7 @@ import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/form-c
 import { StatusBadge, Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
 import { PageHeader, useDebounce } from '@/components/common';
+import { PalletDialog } from '@/components/PalletDialog';
 
 export type DeviceRow = Record<string, unknown> & {
   id: string; asset_tag: string; serial_number: string | null; manufacturer: string; model_name: string; category_name: string; status: string;
@@ -34,6 +35,7 @@ export function DeviceRegisterPage() {
   const [f, setF] = useState<Record<string, string>>({ status: params.get('status') ?? '' });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [palletOpen, setPalletOpen] = useState(false);
   const debounced = useDebounce(search);
   const warehouses = useWarehouses().data;
   const categories = useCategories().data;
@@ -72,10 +74,11 @@ export function DeviceRegisterPage() {
 
   return (
     <div>
-      <PageHeader title="Device Register" crumbs={[{ label: 'Device Register' }]}
+      <PageHeader title="Receiving" crumbs={[{ label: 'Receiving' }]}
         description="Every physical device has its own permanent record and identity."
         actions={<>
           {can('labels.print') && <Button variant="outline" disabled={!selected.size} onClick={printLabels}><Printer /> Print labels ({selected.size})</Button>}
+          {can('labels.print') && <Button variant="outline" disabled={!selected.size} onClick={() => setPalletOpen(true)}><Package /> Pallet label</Button>}
           {can('devices.register') && can('data.import') && <Button variant="outline" asChild><Link to="/devices/import"><Upload /> Import</Link></Button>}
           {can('devices.register') && <Button variant="outline" asChild><Link to="/devices/scan"><ScanBarcode /> Batch scan</Link></Button>}
           {can('devices.register') && <Button onClick={() => setRegisterOpen(true)}><Plus /> Register device</Button>}
@@ -102,6 +105,7 @@ export function DeviceRegisterPage() {
           { header: 'Warranty to', value: (r) => r.warranty_expires_on }, { header: 'Received', value: (r) => r.received_at },
         ]} />
       {registerOpen && <RegisterDeviceDialog onClose={() => setRegisterOpen(false)} />}
+      {palletOpen && <PalletDialog deviceIds={[...selected]} onClose={() => setPalletOpen(false)} onCreated={() => setSelected(new Set())} />}
     </div>
   );
 }

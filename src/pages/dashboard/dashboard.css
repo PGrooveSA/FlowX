@@ -174,3 +174,52 @@
   .fd .zone .zv { font-size: 20px; }
   .fd .zone .zl, .fd .zone .zf { display: none; }
 }
+
+/* ---------- 3D warehouse world ---------- */
+.fd .stage.world { height: clamp(460px, 74vh, 780px); }
+.fd .stage-title .hint { color: var(--muted); }
+.fd .whover { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; display: grid; gap: 1px; padding: 7px 12px 8px; border-radius: 14px; white-space: nowrap;
+  background: rgba(255, 255, 255, .72); border: 1px solid var(--glass-edge); backdrop-filter: blur(18px) saturate(1.5); -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  box-shadow: var(--glass-shine), var(--shadow-2); transition: opacity .15s; will-change: transform; }
+.fd .whover.off { opacity: 0 !important; }
+.fd .whover b { font-size: 13px; font-weight: 600; }
+.fd .whover span { font-size: 12px; color: var(--ink-2); }
+.fd .wtools { position: absolute; right: 16px; bottom: 64px; z-index: 2; display: grid; gap: 6px; }
+.fd .btn.icon { width: 36px; height: 36px; padding: 0; }
+.fd .btn.icon svg { width: 16px; height: 16px; }
+.fd .wareas { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2; display: flex; gap: 6px; overflow-x: auto; padding: 4px; scrollbar-width: none; }
+.fd .wareas::-webkit-scrollbar { display: none; }
+.fd .warea { font: inherit; font-size: 12.5px; font-weight: 500; flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; cursor: pointer; color: var(--ink);
+  background: rgba(255, 255, 255, .6); border: 1px solid var(--glass-edge); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); box-shadow: var(--glass-shine); }
+.fd .warea:hover { background: #fff; }
+.fd .warea i { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+.fd .warea.alert i { background: #e8857f; }
+.fd .warea.on { color: #fff; background: rgba(29, 29, 27, .9); border-color: rgba(29, 29, 27, .9); }
+.fd .wcard { position: absolute; top: 16px; right: 16px; z-index: 4; width: min(340px, calc(100% - 32px)); max-height: calc(100% - 96px); overflow: auto; padding: 16px 16px 14px;
+  border-radius: 24px; background: rgba(255, 255, 255, .62); border: 1px solid var(--glass-edge);
+  backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); box-shadow: var(--glass-shine), var(--shadow-2);
+  animation: wcard-in .28s cubic-bezier(.2, .8, .2, 1); }
+@keyframes wcard-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.fd .wcard-head { display: flex; align-items: center; gap: 10px; }
+.fd .wcard-ic { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: #fff; }
+.fd .wcard-ic svg { width: 18px; height: 18px; }
+.fd .wcard-tag { display: block; font-size: 10.5px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.fd .wcard h3 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -.01em; line-height: 1.15; }
+.fd .wcard-x { margin-left: auto; align-self: flex-start; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer; background: rgba(0, 0, 0, .05); color: var(--ink); }
+.fd .wcard-x:hover { background: rgba(0, 0, 0, .1); }
+.fd .wcard-x svg { width: 15px; height: 15px; }
+.fd .wcard-blurb { margin: 10px 0 12px; font-size: 13px; color: var(--ink-2); }
+.fd .wcard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.fd .wcard-stats > * { display: grid; gap: 2px; padding: 10px 12px; border-radius: 16px; background: rgba(255, 255, 255, .6); border: 1px solid rgba(255, 255, 255, .8); text-decoration: none; }
+.fd .wcard-stats > a:hover { background: #fff; }
+.fd .wcard-stats b { font-size: 22px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fd .wcard-stats small { font-size: 11.5px; color: var(--muted); }
+.fd .wcard .hbars { margin-bottom: 12px; }
+.fd .wcard-go { width: 100%; }
+.fd .wcard-go svg { width: 16px; height: 16px; }
+@media (max-width: 640px) {
+  .fd .stage.world { height: 560px; }
+  .fd .stage-title .hint { display: none; }
+  .fd .wcard { top: auto; bottom: 60px; right: 12px; left: 12px; width: auto; max-height: 62%; }
+  .fd .wtools { bottom: auto; top: 56px; right: 12px; }
+}

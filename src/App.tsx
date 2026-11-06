@@ -16,6 +16,7 @@ const WorkOrderFormPage = page(() => import('@/pages/work-orders/WorkOrderFormPa
 const WorkOrderDetailPage = page(() => import('@/pages/work-orders/WorkOrderDetailPage'), 'WorkOrderDetailPage');
 const WorkOrderLogisticsPage = page(() => import('@/pages/work-orders/WorkOrderLogisticsPage'), 'WorkOrderLogisticsPage');
 const PrintBoxLabels = page(() => import('@/pages/print/PrintBoxLabels'), 'PrintBoxLabels');
+const PrintPalletLabel = page(() => import('@/pages/print/PrintPalletLabel'), 'PrintPalletLabel');
 const WorkOrderViewPage = page(() => import('@/pages/work-orders/WorkOrderViewPage'), 'WorkOrderViewPage');
 const WorkOrderDetailsPage =page(() => import('@/pages/work-orders/WorkOrderDetailsPage'), 'WorkOrderDetailsPage');
 const WorkOrderImportPage =page(() => import('@/pages/work-orders/WorkOrderImportPage'), 'WorkOrderImportPage');
@@ -91,6 +92,7 @@ export function App() {
         <Route path="/print/delivery/:id" element={<Protected>{guard(['delivery.view'], <PrintDeliveryReceipt />)}</Protected>} />
         <Route path="/print/box-labels" element={<Protected>{guard(['work_orders.view'], <PrintBoxLabels />)}</Protected>} />
         <Route path="/print/labels" element={<Protected>{guard(['labels.print'], <PrintLabels />)}</Protected>} />
+        <Route path="/print/pallet" element={<Protected>{guard(['labels.print'], <PrintPalletLabel />)}</Protected>} />
 
         <Route element={<Protected><AppLayout /></Protected>}>
           <Route index element={guard(['dashboard.view'], <DashboardPage />)} />

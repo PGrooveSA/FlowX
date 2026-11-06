@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  AlertTriangle, ArrowDownToLine, CalendarDays, CheckCircle2, ClipboardList, Clock, Cpu, FilePlus2, History, PackageCheck,
-  Receipt, RefreshCw, ShieldAlert, Truck, Wrench,
+  AlertTriangle, ArrowDownToLine, ArrowLeftRight, ArrowRight, BarChart3, Bell, Boxes, CalendarDays, CheckCircle2, ClipboardCheck, ClipboardList, Clock, Cpu,
+  FilePlus2, History, Home, Minus, Package, PackageCheck, Plus, Receipt, RefreshCw, ScrollText, Settings, ShieldAlert, Stethoscope, Truck, Undo2, Users, Wrench, X,
 } from 'lucide-react';
 import { fetchAll, rpc } from '@/lib/api';
 import { formatDate, formatDateTime, formatMoney, labelize } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorState, LoadingState } from '@/components/common';
-import type { AnchorPositions, ZoneKey } from './warehouseScene';
+import { supabase } from '@/lib/supabase';
+import type { AnchorPositions, WarehouseScene, ZoneKey } from './warehouseScene';
 import './dashboard.css';
 
 interface Summary {
@@ -123,54 +124,138 @@ function HBars({ rows, empty }: { rows: { key: string; name: string; value: numb
   );
 }
 
-interface Zone { key: ZoneKey; title: string; value: string; label: string; foot?: string; to: string; alert?: boolean }
+interface Stat { label: string; value: string; to?: string; alert?: boolean }
+interface Area {
+  key: ZoneKey; title: string; tag: string; blurb: string; to: string; cta: string; icon: typeof Clock;
+  stats: Stat[]; bars?: { key: string; name: string; value: number; to?: string; display?: string }[]; alert?: boolean;
+}
 
-/** The live 3D warehouse with a floating summary label over each area. */
-function WarehouseStage({ zones, brand }: { zones: Zone[]; brand: string }) {
+/** The 3D warehouse world: click any object to open a frosted card with that area's live numbers. */
+function WarehouseStage({ areas, brand }: { areas: Area[]; brand: string }) {
   const host = useRef<HTMLDivElement>(null);
-  const labels = useRef<Partial<Record<ZoneKey, HTMLAnchorElement | null>>>({});
+  const tag = useRef<HTMLDivElement>(null);
+  const anchors = useRef<AnchorPositions>({});
+  const scene = useRef<WarehouseScene | null>(null);
   const [failed, setFailed] = useState(false);
+  const [selected, setSelected] = useState<ZoneKey | null>(null);
+  const [hovered, setHovered] = useState<ZoneKey | null>(null);
+  const byKey = new Map(areas.map((a) => [a.key, a]));
+  const enabledKey = areas.map((a) => a.key).join(',');
+  const alertKey = areas.filter((a) => a.alert).map((a) => a.key).join(',');
+
   useEffect(() => {
-    let stop: (() => void) | null = null;
     let cancelled = false;
-    const onAnchors = (a: AnchorPositions) => {
-      const width = host.current?.clientWidth ?? 0;
-      for (const [k, p] of Object.entries(a) as [ZoneKey, { x: number; y: number; visible: boolean }][]) {
-        const el = labels.current[k];
-        if (!el) continue;
-        // keep the whole label inside the stage
-        const half = el.offsetWidth / 2 + 8;
-        const x = Math.min(Math.max(p.x, half), Math.max(half, width - half));
-        el.style.transform = `translate(${x}px, ${p.y}px) translate(-50%, -100%)`;
-        el.classList.toggle('off', !p.visible);
-      }
+    const place = () => {
+      const el = tag.current, z = el?.dataset.zone as ZoneKey | undefined;
+      const p = z ? anchors.current[z] : undefined;
+      if (!el || !p) return;
+      el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
+      el.style.opacity = p.visible ? '1' : '0';
     };
     // three.js loads on demand so the rest of the app stays light
     import('./warehouseScene').then(({ startWarehouseScene }) => {
       if (cancelled || !host.current) return;
-      const s = startWarehouseScene(host.current, { brand, onAnchors });
-      if (!s) setFailed(true); else stop = s.stop;
+      const s = startWarehouseScene(host.current, {
+        brand,
+        enabled: enabledKey.split(',').filter(Boolean) as ZoneKey[],
+        onAnchors: (a) => { anchors.current = a; place(); },
+        onSelect: setSelected,
+        onHover: setHovered,
+      });
+      if (!s) setFailed(true); else scene.current = s;
     }).catch(() => setFailed(true));
-    return () => { cancelled = true; stop?.(); };
-  }, [brand]);
+    return () => { cancelled = true; scene.current?.stop(); scene.current = null; };
+  }, [brand, enabledKey]);
+  useEffect(() => { scene.current?.setAlerts(alertKey.split(',').filter(Boolean) as ZoneKey[]); }, [alertKey, failed]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && selected) { setSelected(null); scene.current?.select(null); } };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, [selected]);
+
+  const choose = (z: ZoneKey | null) => { setSelected(z); scene.current?.select(z); };
+  const area = selected ? byKey.get(selected) : undefined;
+  const hover = hovered && hovered !== selected ? byKey.get(hovered) : undefined;
   return (
-    <section className="panel stage" aria-label="Warehouse overview">
+    <section className="panel stage world" aria-label="3D warehouse">
       <div ref={host} className="stage-canvas" aria-hidden />
       {failed && <div className="stage-fallback">3D view is not available in this browser.</div>}
-      <div className="stage-title"><span className="chip-sr">● Live warehouse</span><span className="chip-sr">Click an area to open it</span></div>
-      {zones.map((z) => (
-        <Link key={z.key} to={z.to} ref={(el) => { labels.current[z.key] = el; }} className={`zone off${z.alert ? ' alert' : ''}`}
-          aria-label={`${z.title}: ${z.value} ${z.label}${z.foot ? `, ${z.foot}` : ''}`}>
-          <span className="zt"><i />{z.title}</span>
-          <span className="zv">{z.value}</span>
-          <span className="zl">{z.label}</span>
-          {z.foot && <span className="zf">{z.foot}</span>}
-        </Link>
-      ))}
+      <div className="stage-title">
+        <span className="chip-sr">● Live warehouse</span>
+        <span className="chip-sr hint">Click anything · drag to look around · Ctrl + scroll to zoom</span>
+      </div>
+      <div ref={tag} data-zone={hover?.key ?? ''} className={`whover${hover ? '' : ' off'}`} aria-hidden>
+        {hover && <><b>{hover.title}</b><span>{hover.stats[0]?.value} {hover.stats[0]?.label.toLowerCase()}</span></>}
+      </div>
+      <div className="wtools">
+        <button type="button" className="btn sm icon" aria-label="Zoom in" onClick={() => scene.current?.zoom(0.75)}><Plus aria-hidden /></button>
+        <button type="button" className="btn sm icon" aria-label="Zoom out" onClick={() => scene.current?.zoom(1.33)}><Minus aria-hidden /></button>
+        <button type="button" className="btn sm icon" aria-label="Back to the whole site" onClick={() => choose(null)}><Home aria-hidden /></button>
+      </div>
+      <nav className="wareas" aria-label="Warehouse areas">
+        {areas.map((a) => (
+          <button key={a.key} type="button" className={`warea${a.key === selected ? ' on' : ''}${a.alert ? ' alert' : ''}`} aria-pressed={a.key === selected} onClick={() => choose(a.key === selected ? null : a.key)}>
+            <i />{a.title}
+          </button>
+        ))}
+      </nav>
+      {area && (
+        <aside className="wcard" aria-label={`${area.title} numbers`} key={area.key}>
+          <div className="wcard-head">
+            <span className="wcard-ic"><area.icon aria-hidden /></span>
+            <div><span className="wcard-tag">{area.tag}</span><h3>{area.title}</h3></div>
+            <button type="button" className="wcard-x" aria-label="Close" onClick={() => choose(null)}><X aria-hidden /></button>
+          </div>
+          <p className="wcard-blurb">{area.blurb}</p>
+          <div className="wcard-stats">
+            {area.stats.map((s) => {
+              const inner = <><b className={s.alert ? 'q-neg' : ''}>{s.value}</b><small>{s.label}</small></>;
+              return s.to ? <Link key={s.label} to={s.to}>{inner}</Link> : <div key={s.label}>{inner}</div>;
+            })}
+          </div>
+          {area.bars && area.bars.length > 0 && <HBars rows={area.bars} empty="" />}
+          <Link className="btn primary wcard-go" to={area.to}>{area.cta} <ArrowRight aria-hidden /></Link>
+        </aside>
+      )}
     </section>
   );
 }
 
+interface WorldCounts {
+  receivedToday: number | null; pallets: number | null; returnsOpen: number | null; returnsTotal: number | null; assessPending: number | null;
+  repairsOpen: number | null; users: number | null; usersActive: number | null; auditToday: number | null; auditFailed: number | null;
+  unread: number | null; movementsToday: number | null; warehouses: number | null; models: number | null;
+}
+// counts for the areas that the dashboard summary does not cover; a count the user may not read comes back empty
+async function loadWorldCounts(): Promise<WorldCounts> {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const iso = today.toISOString();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const count = async (table: string, f?: (q: any) => any) => {
+    try {
+      const q = supabase.from(table).select('*', { count: 'exact', head: true });
+      const { count: c, error } = await (f ? f(q) : q);
+      return error ? null : (c ?? 0);
+    } catch { return null; }
+  };
+  const [receivedToday, pallets, returnsOpen, returnsTotal, assessPending, repairsOpen, users, usersActive, auditToday, auditFailed, unread, movementsToday, warehouses, models] = await Promise.all([
+    count('v_devices', (q) => q.gte('received_at', iso)),
+    count('pallets'),
+    count('returns', (q) => q.not('status', 'in', '(closed,completed,cancelled)')),
+    count('returns'),
+    count('device_assessments', (q) => q.eq('status', 'pending')),
+    count('repair_jobs', (q) => q.not('status', 'in', '(completed,closed,cancelled)')),
+    count('profiles'),
+    count('profiles', (q) => q.eq('is_active', true)),
+    count('audit_logs', (q) => q.gte('occurred_at', iso)),
+    count('audit_logs', (q) => q.gte('occurred_at', iso).eq('success', false)),
+    count('notifications', (q) => q.eq('is_read', false)),
+    count('v_device_movements', (q) => q.gte('performed_at', iso)),
+    count('warehouses'),
+    count('device_models'),
+  ]);
+  return { receivedToday, pallets, returnsOpen, returnsTotal, assessPending, repairsOpen, users, usersActive, auditToday, auditFailed, unread, movementsToday, warehouses, models };
+}
 export function DashboardPage() {
   const { can, profile, roles, branding } = useAuth();
   const summary = useQuery({ queryKey: ['dashboard'], queryFn: () => rpc<Summary>('dashboard_summary'), refetchInterval: 60_000 });
@@ -186,6 +271,8 @@ export function DashboardPage() {
     enabled: can('inventory.view'),
     queryFn: () => fetchAll<{ performed_at: string }>('v_device_movements', 'performed_at', (q) => q.gte('performed_at', since.toISOString())),
   });
+
+  const world = useQuery({ queryKey: ['dashboard', 'world'], queryFn: loadWorldCounts, refetchInterval: 60_000 });
 
   if (summary.isLoading) return <LoadingState />;
   if (summary.error) return <ErrorState error={summary.error} onRetry={() => void summary.refetch()} />;
@@ -206,16 +293,77 @@ export function DashboardPage() {
     return acc;
   }, {})).sort((a, b) => b.total - a.total);
 
-  const zones: Zone[] = [
-    { key: 'work_orders', title: 'Work orders', value: n(wo.total), label: 'work orders', foot: `${n(wo.pending_authorisation)} awaiting authorisation`, to: '/work-orders?tab=pending_authorisation', alert: wo.pending_authorisation > 0 },
-    { key: 'stock', title: 'Stock', value: n(dv.available), label: 'devices available', foot: `${n(dv.reserved)} reserved · ${n(dv.total)} registered`, to: '/warehouse' },
-    { key: 'issuing', title: 'Issuing', value: n(wo.pending_issuing), label: 'pending issuing', foot: `${n(wo.scheduled)} scheduled`, to: '/work-orders?tab=issued' },
-    { key: 'repairs', title: 'Repairs', value: n(dv.in_repair), label: 'in repair', foot: `${n(dv.awaiting_assessment)} awaiting assessment`, to: '/repairs', alert: dv.awaiting_assessment > 0 },
-    { key: 'discrepancies', title: 'Quarantine', value: n(s.open_discrepancies), label: 'open discrepancies', to: '/discrepancies', alert: s.open_discrepancies > 0 },
-    { key: 'dispatch', title: 'Dispatch dock', value: n(wo.pending_dispatch), label: 'ready to dispatch', foot: `${n(wo.dispatched)} in delivery · ${n(s.deliveries_pending)} to confirm`, to: '/dispatch' },
-    ...(seeInvoices ? [{ key: 'invoicing' as const, title: 'Invoicing', value: n(inv.outstanding_count), label: 'outstanding invoices', foot: formatMoney(inv.outstanding_cents), to: '/invoicing?status=outstanding', alert: inv.overdue_count > 0 }] : []),
+  const w = world.data;
+  const c = (v: number | null | undefined) => (v === null || v === undefined ? '—' : n(v));
+  const allAreas: (Area & { perms: string[] })[] = [
+    { key: 'receiving', perms: ['devices.view'], title: 'Receiving', tag: 'Left building · IN', icon: ArrowDownToLine, to: '/devices', cta: 'Open Receiving',
+      blurb: 'Lorries unload at the IN dock; every device is scanned, labelled and registered.',
+      stats: [{ label: 'Devices registered', value: n(dv.total), to: '/devices' }, { label: 'Received today', value: c(w?.receivedToday) },
+        { label: 'Available', value: n(dv.available), to: '/devices?status=available' }, { label: 'Pallets labelled', value: c(w?.pallets) }] },
+    { key: 'returns', perms: ['returns.manage'], title: 'Returns', tag: 'Right building · IN', icon: Undo2, to: '/returns', cta: 'Open Returns',
+      blurb: 'Devices coming back from schools arrive at the second IN dock.',
+      stats: [{ label: 'Open returns', value: c(w?.returnsOpen), alert: (w?.returnsOpen ?? 0) > 0 }, { label: 'All returns', value: c(w?.returnsTotal) }],
+      alert: (w?.returnsOpen ?? 0) > 0 },
+    { key: 'binning', perms: ['inventory.view'], title: 'Warehouse inventory', tag: 'Binning', icon: Boxes, to: '/warehouse', cta: 'Open Warehouse Inventory',
+      blurb: 'Racked stock by warehouse, ready to be reserved for work orders.',
+      stats: [{ label: 'Available', value: n(dv.available) }, { label: 'Reserved / issued', value: n(dv.reserved) }],
+      bars: s.stock_by_warehouse.map((x) => ({ key: x.warehouse, name: x.warehouse, value: x.available, to: '/warehouse' })) },
+    { key: 'movements', perms: ['inventory.view'], title: 'Stock movements', tag: 'Forklifts · green binning', icon: ArrowLeftRight, to: '/movements', cta: 'Open Stock Movements',
+      blurb: 'Every receive, reserve, issue, dispatch, return and repair move of a device.',
+      stats: [{ label: 'Movements today', value: c(w?.movementsToday) }, { label: 'Last 14 days', value: movements.data ? n(movements.data.length) : '—' }] },
+    { key: 'preproduction', perms: ['work_orders.view'], title: 'Work orders', tag: 'Pre-production', icon: ClipboardList, to: '/work-orders', cta: 'Open Work Orders',
+      blurb: 'New work orders are authorised and scheduled before devices are imaged.',
+      stats: [{ label: 'Work orders', value: n(wo.total), to: '/work-orders' },
+        { label: 'Pending authorisation', value: n(wo.pending_authorisation), to: '/work-orders?tab=pending_authorisation', alert: wo.pending_authorisation > 0 },
+        { label: 'Pending scheduling', value: n(wo.pending_scheduling), to: '/work-orders?tab=pending_scheduling' }],
+      alert: wo.pending_authorisation > 0 },
+    { key: 'production', perms: ['work_orders.view'], title: 'Issuing', tag: 'Production', icon: PackageCheck, to: '/work-orders?tab=issued', cta: 'Open issuing',
+      blurb: 'Scheduled work orders are prepared on the production lines and issued.',
+      stats: [{ label: 'Scheduled', value: n(wo.scheduled) }, { label: 'Pending issuing', value: n(wo.pending_issuing) }, { label: 'Issued', value: n(wo.issued) }] },
+    { key: 'picking', perms: ['work_orders.view'], title: 'Picking & packing', tag: 'Left building', icon: Package, to: '/work-orders?tab=completed', cta: 'Open completed work orders',
+      blurb: 'Issued devices are boxed and labelled per school.',
+      stats: [{ label: 'Issued', value: n(wo.issued) }, { label: 'Ready to dispatch', value: n(wo.pending_dispatch), to: '/dispatch' }] },
+    { key: 'dispatch', perms: ['dispatch.view'], title: 'Dispatch', tag: 'Right building · OUT', icon: Truck, to: '/dispatch', cta: 'Open Dispatch',
+      blurb: 'Packed work orders are staged and loaded onto lorries at the OUT dock.',
+      stats: [{ label: 'Ready to dispatch', value: n(wo.pending_dispatch) }, { label: 'Dispatched', value: n(wo.dispatched) }],
+      bars: s.monthly_dispatch.slice(-4).map((m) => ({ key: m.month, name: m.month, value: m.devices, display: `${n(m.devices)} devices` })) },
+    { key: 'delivery', perms: ['delivery.view'], title: 'Delivery confirmation', tag: 'Delivery vans', icon: ClipboardCheck, to: '/delivery', cta: 'Open Delivery Confirmation',
+      blurb: 'Vans take devices to schools; each delivery is confirmed with proof.',
+      stats: [{ label: 'To confirm', value: n(s.deliveries_pending), alert: s.deliveries_pending > 0 }, { label: 'In delivery', value: n(wo.dispatched) }, { label: 'Completed', value: n(wo.completed) }] },
+    { key: 'repairs', perms: ['assessments.view'], title: 'Repairs', tag: 'Enablement partner', icon: Wrench, to: '/repairs', cta: 'Open Repairs',
+      blurb: 'Faulty devices are repaired, checked and sent back to stock.',
+      stats: [{ label: 'In repair', value: n(dv.in_repair) }, { label: 'Open repair jobs', value: c(w?.repairsOpen) }],
+      bars: s.repairs_by_status.map((r) => ({ key: r.status, name: labelize(r.status), value: r.count, to: '/repairs' })) },
+    { key: 'assessments', perms: ['assessments.view'], title: 'Device assessments', tag: 'Clinic · sorting · charging', icon: Stethoscope, to: '/assessments', cta: 'Open Device Assessments',
+      blurb: 'Devices are sorted, charged and assessed before repair or re-use.',
+      stats: [{ label: 'Awaiting assessment', value: n(dv.awaiting_assessment), alert: dv.awaiting_assessment > 0 }, { label: 'Pending assessments', value: c(w?.assessPending) }],
+      alert: dv.awaiting_assessment > 0 },
+    { key: 'discrepancies', perms: ['devices.view', 'dispatch.view'], title: 'Discrepancies', tag: 'Quarantine cage', icon: ShieldAlert, to: '/discrepancies', cta: 'Open Discrepancies',
+      blurb: 'Devices with a serial number problem wait here until it is resolved.',
+      stats: [{ label: 'Open discrepancies', value: n(s.open_discrepancies), alert: s.open_discrepancies > 0 }], alert: s.open_discrepancies > 0 },
+    { key: 'invoicing', perms: ['invoices.view'], title: 'Invoicing', tag: 'Offices', icon: Receipt, to: '/invoicing', cta: 'Open Invoicing',
+      blurb: 'Invoices for issued work orders, and what is still owed.',
+      stats: [{ label: 'Outstanding', value: formatMoney(inv.outstanding_cents), to: '/invoicing?status=outstanding' }, { label: 'Outstanding invoices', value: n(inv.outstanding_count) },
+        { label: 'Overdue', value: formatMoney(inv.overdue_cents), to: '/invoicing?status=overdue', alert: inv.overdue_count > 0 }, { label: 'Overdue invoices', value: n(inv.overdue_count) }],
+      alert: inv.overdue_count > 0 },
+    { key: 'reports', perms: ['reports.view'], title: 'Reports & analytics', tag: 'Offices', icon: BarChart3, to: '/reports', cta: 'Open Reports & Analytics',
+      blurb: 'Work orders by province and the other management reports.',
+      stats: [{ label: 'Work orders', value: n(wo.total) }, { label: 'Devices', value: n(dv.total) }],
+      bars: [...s.wo_by_province].sort((a, b) => b.count - a.count).slice(0, 5).map((p) => ({ key: p.province, name: p.province, value: p.count })) },
+    { key: 'users', perms: ['users.manage', 'roles.manage'], title: 'User management', tag: 'PM & admin offices', icon: Users, to: '/admin/users', cta: 'Open User Management',
+      blurb: 'The people who use the system, their roles and permissions.',
+      stats: [{ label: 'Users', value: c(w?.users) }, { label: 'Active', value: c(w?.usersActive) }] },
+    { key: 'settings', perms: ['settings.manage', 'master_data.manage'], title: 'System settings', tag: 'Offices · server room', icon: Settings, to: '/admin/settings', cta: 'Open System Settings',
+      blurb: 'Warehouses, device models, suppliers and other master data.',
+      stats: [{ label: 'Warehouses', value: c(w?.warehouses) }, { label: 'Device models', value: c(w?.models) }] },
+    { key: 'audit', perms: ['audit.view'], title: 'Audit trail', tag: 'Security', icon: ScrollText, to: '/audit', cta: 'Open Audit Trail',
+      blurb: 'Every change made in the system, who made it and when.',
+      stats: [{ label: 'Events today', value: c(w?.auditToday) }, { label: 'Failed today', value: c(w?.auditFailed), alert: (w?.auditFailed ?? 0) > 0 }] },
+    { key: 'notifications', perms: [], title: 'Notifications', tag: 'Service block', icon: Bell, to: '/notifications', cta: 'Open Notifications',
+      blurb: 'Messages and reminders for you.',
+      stats: [{ label: 'Unread', value: c(w?.unread), alert: (w?.unread ?? 0) > 0 }], alert: (w?.unread ?? 0) > 0 },
   ];
-
+  const areas: Area[] = allAreas.filter((a) => !a.perms.length || a.perms.some(can));
   const kpi = (v: number, l: string, to: string, Icon: typeof Clock, flag?: string | false) => (
     <Link className="kpi" to={to}>
       <div className="kpi-ic"><Icon aria-hidden /></div><div className="v">{n(v)}</div><div className="l">{l}</div>{flag ? <span className="flag">{flag}</span> : null}
@@ -246,13 +394,13 @@ export function DashboardPage() {
           {can('work_orders.create') && <Link className="btn sm" to="/work-orders/new"><FilePlus2 aria-hidden /> New work order</Link>}
           {can('inventory.view') && <Link className="btn sm" to="/warehouse"><ArrowDownToLine aria-hidden /> Receive</Link>}
           {can('dispatch.view') && <Link className="btn sm" to="/dispatch"><Truck aria-hidden /> Dispatch</Link>}
-          <button type="button" className="btn sm" onClick={() => { void summary.refetch(); void activity.refetch(); void movements.refetch(); }} aria-label="Refresh dashboard">
+          <button type="button" className="btn sm" onClick={() => { void summary.refetch(); void activity.refetch(); void movements.refetch(); void world.refetch(); }} aria-label="Refresh dashboard">
             <RefreshCw aria-hidden className={summary.isFetching ? 'animate-spin' : ''} /> Refresh
           </button>
         </div>
       </section>
 
-      <WarehouseStage zones={zones} brand={branding.appName} />
+      <WarehouseStage areas={areas} brand={branding.appName} />
 
       <div className="kpis">
         {kpi(dv.available, `Devices available · ${n(dv.total)} registered`, '/devices?status=available', Cpu)}

@@ -16,7 +16,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard, anyOf: ['dashboard.view'], group: 'Operations' },
   { label: 'Work Orders', to: '/work-orders', icon: ClipboardList, anyOf: ['work_orders.view'], group: 'Operations' },
-  { label: 'Device Register', to: '/devices', icon: Cpu, anyOf: ['devices.view'], group: 'Warehouse' },
+  { label: 'Receiving', to: '/devices', icon: Cpu, anyOf: ['devices.view'], group: 'Warehouse' },
   { label: 'Warehouse Inventory', to: '/warehouse', icon: Warehouse, anyOf: ['inventory.view'], group: 'Warehouse' },
   { label: 'Stock Movements', to: '/movements', icon: ArrowLeftRight, anyOf: ['inventory.view'], group: 'Warehouse' },
   { label: 'Device Assessments', to: '/assessments', icon: Stethoscope, anyOf: ['assessments.view'], group: 'Warehouse' },

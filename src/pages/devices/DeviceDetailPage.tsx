@@ -54,7 +54,7 @@ export function DeviceDetailPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={d.serial_number ?? d.asset_tag} crumbs={[{ label: 'Device Register', to: '/devices' }, { label: d.asset_tag }]}
+      <PageHeader title={d.serial_number ?? d.asset_tag} crumbs={[{ label: 'Receiving', to: '/devices' }, { label: d.asset_tag }]}
         description={<span className="flex flex-wrap items-center gap-2"><StatusBadge status={d.status} kind="device" /> {d.manufacturer} {d.model_name} · {d.asset_tag}
           {d.has_open_discrepancy && <Badge tone="red">Open serial discrepancy — blocked</Badge>}</span>}
         actions={<>
