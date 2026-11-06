@@ -45,18 +45,19 @@ export function AppLayout() {
   }, []);
 
   const nav = (compact: boolean) => (
-    <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
+    <nav aria-label="Main navigation" className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 pb-3 pt-1">
       {groups.map((g) => (
-        <div key={g} className="mb-3">
-          {!compact && <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{g}</div>}
+        <div key={g} className="mt-2">
+          {!compact && <div className="whitespace-nowrap px-2.5 pb-0.5 pt-1 text-[10.5px] font-medium uppercase tracking-[.12em] text-muted-foreground">{g}</div>}
           {items.filter((i) => i.group === g).map((i) => (
             <NavLink key={i.to} to={i.to} end={i.to === '/'} title={compact ? i.label : undefined}
-              className={({ isActive }) => cn('flex items-center gap-3 rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white',
-                isActive && 'bg-primary text-white hover:bg-primary', compact && 'justify-center')}>
-              <i.icon className="h-4 w-4 shrink-0" aria-hidden />
+              className={({ isActive }) => cn('group relative my-0.5 flex items-center gap-[11px] whitespace-nowrap rounded-full px-2 py-1 text-[14px] text-ink-2 transition-[background-color,color,transform] active:scale-95',
+                isActive ? 'bg-ink text-white shadow-[0_6px_16px_rgba(29,29,27,.18)] after:absolute after:right-3 after:top-1/2 after:h-[7px] after:w-[7px] after:-translate-y-1/2 after:rounded-full after:bg-sky after:shadow-[0_0_10px_rgba(142,207,245,.9)]' : 'hover:bg-black/[.045] hover:text-ink',
+                compact && 'justify-center after:hidden')}>
+              <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border border-[#e1e7ec] bg-white text-ink transition-transform duration-300 group-hover:translate-x-[3px] group-hover:scale-105 group-aria-[current=page]:border-transparent group-aria-[current=page]:bg-white/15 group-aria-[current=page]:text-white"><i.icon className="h-[15px] w-[15px]" aria-hidden /></span>
               {!compact && <span className="truncate">{i.label}</span>}
               {!compact && i.to === '/notifications' && unread > 0 && (
-                <span className="ml-auto rounded-full bg-red-500 px-1.5 text-[10px] font-semibold text-white">{unread}</span>
+                <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-sky px-1.5 text-[11px] font-semibold text-ink shadow-[0_0_0_2px_#fff]">{unread}</span>
               )}
             </NavLink>
           ))}
@@ -66,20 +67,20 @@ export function AppLayout() {
   );
 
   const brand = (compact: boolean) => (
-    <Link to="/" className="flex h-14 items-center gap-2 border-b border-slate-800 px-4 text-white">
-      {branding.logoUrl ? <img src={branding.logoUrl} alt="" className="h-7 w-7 rounded" />
-        : <span className="flex h-7 w-7 items-center justify-center rounded bg-primary text-sm font-bold">{branding.appName.charAt(0)}</span>}
-      {!compact && <span className="truncate font-semibold">{branding.appName}</span>}
+    <Link to="/" className="flex h-16 items-center gap-3 px-4 text-ink">
+      {branding.logoUrl ? <img src={branding.logoUrl} alt="" className="h-10 w-10 rounded-full object-contain" />
+        : <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-base font-semibold text-white">{branding.appName.charAt(0)}</span>}
+      {!compact && <span className="grid min-w-0"><b className="truncate text-base font-semibold">{branding.appName}</b><small className="text-[11px] uppercase tracking-[.06em] text-muted-foreground">Device lifecycle</small></span>}
     </Link>
   );
 
   return (
     <div className="flex min-h-screen">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-card focus:p-2">Skip to content</a>
-      <aside className={cn('no-print sticky top-0 hidden h-screen shrink-0 flex-col bg-slate-900 transition-all lg:flex', collapsed ? 'w-16' : 'w-64')}>
+      <aside className={cn('no-print sticky top-0 z-40 hidden h-screen shrink-0 flex-col border-r border-white/80 bg-white/40 shadow-[inset_-1px_0_0_rgba(255,255,255,.6),8px_0_30px_rgba(20,30,40,.05)] backdrop-blur-[20px] backdrop-saturate-150 transition-all lg:flex', collapsed ? 'w-[76px]' : 'w-[248px]')}>
         {brand(collapsed)}
         {nav(collapsed)}
-        <button onClick={() => setCollapsed((c) => !c)} className="flex items-center justify-center gap-2 border-t border-slate-800 py-2 text-xs text-slate-400 hover:text-white"
+        <button onClick={() => setCollapsed((c) => !c)} className="mx-2.5 mb-2.5 flex items-center justify-center gap-2 rounded-full border-t border-transparent py-2 text-xs text-muted-foreground hover:bg-black/[.045] hover:text-ink"
                 aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           {collapsed ? <ChevronsRight className="h-4 w-4" /> : <><ChevronsLeft className="h-4 w-4" /> Collapse</>}
         </button>
@@ -87,10 +88,10 @@ export function AppLayout() {
 
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <div className="absolute inset-0 bg-slate-900/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-slate-900">
+          <div className="absolute inset-0 bg-[rgba(15,22,30,.35)] backdrop-blur-[2px]" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col border-r border-white/80 bg-white/80 backdrop-blur-[20px]">
             <div className="flex items-center justify-between pr-2">{brand(false)}
-              <button onClick={() => setMobileOpen(false)} className="text-slate-300" aria-label="Close navigation"><X className="h-5 w-5" /></button>
+              <button onClick={() => setMobileOpen(false)} className="rounded-full p-1.5 text-ink hover:bg-black/5" aria-label="Close navigation"><X className="h-5 w-5" /></button>
             </div>
             {nav(false)}
           </aside>
@@ -98,21 +99,21 @@ export function AppLayout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-card/95 px-3 backdrop-blur sm:px-5">
+        <header className="no-print sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/60 bg-[rgba(244,247,249,.45)] px-3 backdrop-blur-[20px] backdrop-saturate-150 sm:px-[22px]">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu /></Button>
           <button onClick={() => setSearchOpen(true)}
-            className="flex h-9 w-full max-w-md items-center gap-2 rounded-md border bg-background px-3 text-sm text-muted-foreground hover:bg-muted">
+            className="glass-strong flex h-10 w-full max-w-md items-center gap-2 rounded-full px-4 text-sm text-muted-foreground transition-colors hover:bg-white">
             <Search className="h-4 w-4" /> <span className="truncate">Search serial, asset tag, work order…</span>
-            <kbd className="ml-auto hidden rounded border bg-card px-1.5 text-[10px] sm:inline">Ctrl K</kbd>
+            <kbd className="ml-auto hidden rounded-full border border-black/10 bg-white/70 px-2 text-[10px] sm:inline">Ctrl K</kbd>
           </button>
-          <div className="ml-auto flex items-center gap-1">
-            <Button asChild variant="ghost" size="icon" aria-label={`Notifications (${unread} unread)`} className="relative">
-              <Link to="/notifications"><Bell />{unread > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />}</Link>
+          <div className="ml-auto flex items-center gap-2">
+            <Button asChild variant="outline" size="icon" aria-label={`Notifications (${unread} unread)`} className="relative h-[42px] w-[42px]">
+              <Link to="/notifications"><Bell />{unread > 0 && <span className="absolute -right-1 -top-1 grid h-[19px] min-w-[19px] place-items-center rounded-full bg-sky px-1 text-[10.5px] font-semibold text-ink shadow-[0_0_0_2px_#fff]">{unread}</span>}</Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted" aria-label="Account menu">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                <button className="glass-strong flex items-center gap-2 rounded-full py-1 pl-1 pr-4 transition-transform active:scale-95" aria-label="Account menu">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky text-xs font-semibold text-ink">
                     {(profile?.full_name || profile?.email || '?').charAt(0).toUpperCase()}
                   </span>
                   <span className="hidden text-left text-sm leading-tight md:block">
@@ -130,7 +131,7 @@ export function AppLayout() {
             </DropdownMenu>
           </div>
         </header>
-        <main id="main" className="flex-1 px-3 py-4 sm:px-6 sm:py-6">
+        <main id="main" className="flex-1 px-3 py-4 sm:px-[22px] sm:py-[18px]">
           <Outlet />
         </main>
       </div>

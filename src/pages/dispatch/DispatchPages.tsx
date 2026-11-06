@@ -67,8 +67,8 @@ export function DispatchPage() {
             columns={[
               c.accessor('dispatch_number', { header: 'Dispatch', cell: (x) => <Link className="mono text-primary hover:underline" to={`/dispatch/${x.row.original.id}`}>{x.getValue()}</Link> }),
               c.accessor('status', { header: 'Status', cell: (x) => <StatusBadge status={x.getValue()} /> }), c.accessor('wo_number', { header: 'Work order', cell: (x) => <span className="mono">{x.getValue()}</span> }),
-              c.accessor('institution_name', { header: 'Destination' }), c.accessor('warehouse_code', { header: 'Origin' }), c.accessor('courier_name', { header: 'Courier', cell: (x) => x.getValue() ?? 'â€”' }),
-              c.accessor('tracking_number', { header: 'Tracking', cell: (x) => <span className="mono">{x.getValue() ?? 'â€”'}</span> }),
+              c.accessor('institution_name', { header: 'Destination' }), c.accessor('warehouse_code', { header: 'Origin' }), c.accessor('courier_name', { header: 'Courier', cell: (x) => x.getValue() ?? '—' }),
+              c.accessor('tracking_number', { header: 'Tracking', cell: (x) => <span className="mono">{x.getValue() ?? '—'}</span> }),
               c.accessor('device_count', { header: 'Devices', enableSorting: false }), c.accessor('delivered_count', { header: 'Delivered', enableSorting: false }),
               c.accessor('dispatched_at', { header: 'Dispatched', cell: (x) => formatDateTime(x.getValue()) }),
               c.accessor('expected_delivery_date', { header: 'Expected', cell: (x) => formatDate(x.getValue()) }),

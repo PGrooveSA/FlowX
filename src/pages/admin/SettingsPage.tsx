@@ -141,7 +141,7 @@ function WarehousesCard() {
   const [v, setV] = useState({ code: '', name: '', province_id: '', city: '' });
   return (
     <Card><CardHeader><CardTitle>Warehouses</CardTitle></CardHeader><CardContent className="space-y-2">
-      <ul className="divide-y text-sm">{warehouses?.map((w) => <li key={w.id} className="flex items-center justify-between py-1.5"><span><span className="mono">{w.code}</span> â€” {w.name}</span>
+      <ul className="divide-y text-sm">{warehouses?.map((w) => <li key={w.id} className="flex items-center justify-between py-1.5"><span><span className="mono">{w.code}</span> — {w.name}</span>
         <label className="flex items-center gap-1 text-xs"><Checkbox checked={w.is_active} onChange={(e) => void save({ is_active: e.target.checked }, w.id)} /> Active</label></li>)}</ul>
       <div className="grid gap-2 sm:grid-cols-5">
         <Input aria-label="Code" placeholder="CODE-01" value={v.code} onChange={(e) => setV({ ...v, code: e.target.value.toUpperCase() })} />

@@ -93,9 +93,9 @@ export function WorkOrderViewPage() {
   const total = grid.data?.count ?? 0;
 
   return (
-    <div className="-mx-3 -my-4 min-h-full bg-slate-50 px-6 py-3 text-[13px] text-slate-900 sm:-mx-6 sm:-my-6">
+    <div className="text-[13px] text-ink">
       <div className="mb-3 flex items-center gap-2">
-        <Button variant="outline" size="sm" className="h-6 rounded-sm border-slate-800 px-2 text-xs text-primary" onClick={backToList}>&lt;Back to List</Button>
+        <Button variant="outline" size="sm" className="h-6 rounded-full border-slate-800 px-2 text-xs text-primary" onClick={backToList}>&lt;Back to List</Button>
         <Link to={`/work-orders?tab=${listTab}`} className="text-sm text-primary hover:underline">Work Orders</Link>
       </div>
 
@@ -145,16 +145,16 @@ export function WorkOrderViewPage() {
       </div>
 
       <div className="flex justify-end pb-3">
-        <Button variant="outline" size="sm" className="h-7 rounded-sm border-primary text-xs text-primary" onClick={backToList}>Back To List</Button>
+        <Button variant="outline" size="sm" className="h-7 rounded-full border-primary text-xs text-primary" onClick={backToList}>Back To List</Button>
       </div>
 
       <p className="mb-4">This is a list of Packages currently in this Work Order.</p>
       <PagerBar className="mb-3" page={page} pageSize={pageSize} total={total} loading={grid.isFetching && !grid.data} onPage={setPage} onPageSize={setPageSize} />
       {grid.error ? <ErrorState error={grid.error} onRetry={() => void grid.refetch()} /> : (
-        <div className="overflow-x-auto bg-white">
-          <table className="w-full min-w-[800px] border-collapse">
+        <div className="glass overflow-x-auto rounded-[18px]">
+          <table className="w-full min-w-[800px] border-separate border-spacing-0">
             <thead>
-              <tr className="border-b border-slate-300 bg-slate-50">
+              <tr>
                 {columns.map((c) => (
                   <GridHeaderCell key={c.key} column={c} sort={sort} onSort={(col) => setSort((s) => (s.column === col ? { column: col, desc: !s.desc } : { column: col, desc: false }))}
                     filterValue={colFilters[c.key] ?? ''} onFilter={(v) => setColFilters((s) => ({ ...s, [c.key]: v }))} />
@@ -163,11 +163,11 @@ export function WorkOrderViewPage() {
             </thead>
             <tbody className={cn(grid.isFetching && 'opacity-70')}>
               {grid.isLoading ? (
-                <tr><td colSpan={columns.length} className="px-2 py-6"><div className="h-3 w-full animate-pulse rounded bg-slate-200" /></td></tr>
+                <tr><td colSpan={columns.length} className="px-2 py-6"><div className="h-3 w-full animate-pulse rounded-full bg-white/70" /></td></tr>
               ) : rows.length === 0 ? (
                 <tr><td colSpan={columns.length} className="px-2 py-10 text-center text-muted-foreground">No packages in this work order.</td></tr>
               ) : rows.map((r) => (
-                <tr key={r.id} className="border-b border-slate-200 odd:bg-slate-100">
+                <tr key={r.id} >
                   {columns.map((c) => <td key={c.key} className="border-l border-slate-200 px-2 py-1.5 first:border-l-0">{c.render(r)}</td>)}
                 </tr>
               ))}

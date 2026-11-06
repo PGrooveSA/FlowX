@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Printer, Upload } from 'lucide-react';
+import { Plus, Printer, ScanBarcode, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { rpc, type Filter } from '@/lib/api';
 import { formatDate, labelize } from '@/lib/utils';
@@ -77,6 +77,7 @@ export function DeviceRegisterPage() {
         actions={<>
           {can('labels.print') && <Button variant="outline" disabled={!selected.size} onClick={printLabels}><Printer /> Print labels ({selected.size})</Button>}
           {can('devices.register') && can('data.import') && <Button variant="outline" asChild><Link to="/devices/import"><Upload /> Import</Link></Button>}
+          {can('devices.register') && <Button variant="outline" asChild><Link to="/devices/scan"><ScanBarcode /> Batch scan</Link></Button>}
           {can('devices.register') && <Button onClick={() => setRegisterOpen(true)}><Plus /> Register device</Button>}
         </>} />
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
@@ -109,6 +110,7 @@ const registerSchema = z.object({
   model_id: z.string().uuid('Select a model'),
   warehouse_id: z.string().uuid('Select a warehouse'),
   location_id: z.string().optional(),
+  asset_tag: z.string().trim().max(40).optional(),
   serial_number: z.string().trim().max(64).optional(),
   serial_exception_reason: z.string().max(300).optional(),
   imei: z.string().trim().regex(/^$|^\d{14,16}$/, 'IMEI must be 14–16 digits').optional(),
@@ -138,12 +140,15 @@ function RegisterDeviceDialog({ onClose }: { onClose: () => void }) {
   const submit = form.handleSubmit(async (v) => {
     try {
       const r = await rpc<{ asset_tag: string }>('register_device', { p: v });
-      toast.success(`Registered ${v.serial_number || '(serial exception)'} as ${r.asset_tag}`);
+      toast.success(`Registered ${v.serial_number || '(serial exception)'} as asset tag ${r.asset_tag}`);
       void qc.invalidateQueries({ queryKey: ['devices'] });
-      if (keepOpen) form.reset({ ...v, serial_number: '', imei: '', serial_exception_reason: '' });
-      else onClose();
+      if (keepOpen) {
+        form.reset({ ...v, asset_tag: '', serial_number: '', imei: '', serial_exception_reason: '' });
+        setTimeout(() => form.setFocus(v.asset_tag ? 'asset_tag' : 'serial_number'), 0);
+      } else onClose();
     } catch (err) {
-      form.setError('serial_number', { message: (err as Error).message });
+      const msg = (err as Error).message;
+      form.setError(/asset tag/i.test(msg) ? 'asset_tag' : 'serial_number', { message: msg });
     }
   });
 
@@ -156,6 +161,9 @@ function RegisterDeviceDialog({ onClose }: { onClose: () => void }) {
             <Select id="r-model" placeholder="Select…" {...form.register('model_id')} options={opts(models?.filter((m) => m.is_active), (m) => `${m.manufacturer} ${m.model_name}`)} />
           </Field>
           <Field label="Condition" htmlFor="r-cond" required><Select id="r-cond" {...form.register('condition')} options={DEVICE_CONDITIONS.map((c) => ({ value: c, label: labelize(c) }))} /></Field>
+          <Field label="Asset tag" htmlFor="r-tag" error={e.asset_tag?.message} hint="Scan the asset tag label, or leave blank to get the next number automatically.">
+            <Input id="r-tag" className="mono" autoComplete="off" {...form.register('asset_tag')} />
+          </Field>
           <Field label="Serial number" htmlFor="r-serial" required={cat?.requires_serial !== false} error={e.serial_number?.message}>
             <Input id="r-serial" className="mono" autoComplete="off" {...form.register('serial_number')} />
           </Field>

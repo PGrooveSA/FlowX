@@ -55,7 +55,7 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
         <DialogHeader title="Search" description="Serial number, asset tag, IMEI, work order, EMIS number, invoice or dispatch number." />
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
-          <Input autoFocus value={term} onChange={(e) => setTerm(e.target.value)} className="pl-9" placeholder="Start typingâ€¦" aria-label="Search" />
+          <Input autoFocus value={term} onChange={(e) => setTerm(e.target.value)} className="pl-9" placeholder="Start typing…" aria-label="Search" />
         </div>
         <ul className="mt-3 max-h-96 divide-y overflow-y-auto">
           {q.length >= 2 && results.data?.length === 0 && <li className="py-6 text-center text-sm text-muted-foreground">No matches</li>}

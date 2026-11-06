@@ -136,9 +136,9 @@ export function WorkOrderDetailsPage() {
   const rows = grid.data?.rows ?? [];
 
   return (
-    <div className="-mx-3 -my-4 min-h-full bg-slate-50 px-6 py-3 text-[13px] text-slate-900 sm:-mx-6 sm:-my-6">
+    <div className="text-[13px] text-ink">
       <div className="mb-3 flex items-center gap-2">
-        <Button variant="outline" size="sm" className="h-6 rounded-sm border-slate-800 px-2 text-xs text-primary" onClick={() => nav('/work-orders?tab=issued')}>&lt;Back to List</Button>
+        <Button variant="outline" size="sm" className="h-6 rounded-full border-slate-800 px-2 text-xs text-primary" onClick={() => nav('/work-orders?tab=issued')}>&lt;Back to List</Button>
         <Link to="/work-orders?tab=issued" className="text-sm text-primary hover:underline">Work Orders</Link>
       </div>
 
@@ -170,7 +170,7 @@ export function WorkOrderDetailsPage() {
           </div>
         </dl>
         <div className="space-y-6 lg:pt-8">
-          <section className="rounded border border-slate-300 bg-white" aria-label="Scan Summary">
+          <section className="glass overflow-hidden rounded-[18px]" aria-label="Scan Summary">
             <h2 className="border-b border-slate-300 py-3 text-center text-sm font-semibold">Scan Summary</h2>
             <dl className="space-y-2 px-9 py-4 text-sm">
               {([['Scanned', scanned], ['Pending Boxing', pendingBoxing.length], ['Boxed', boxed]] as [string, number][]).map(([k, v]) => (
@@ -186,7 +186,7 @@ export function WorkOrderDetailsPage() {
           <div className="flex items-center justify-end gap-4">
             <label htmlFor="scan-status-filter" className="text-sm font-semibold">Scan Status Filter:</label>
             <select id="scan-status-filter" value={scanFilter} onChange={(e) => setScanFilter(e.target.value)}
-              className="h-9 w-[355px] max-w-full rounded border border-slate-300 bg-white px-8 text-sm text-primary">
+              className="h-10 w-[355px] max-w-full rounded-full border border-black/10 bg-white/70 px-8 text-sm text-ink focus-visible:border-ink focus-visible:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky/45">
               {SCAN_FILTERS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
@@ -196,8 +196,8 @@ export function WorkOrderDetailsPage() {
       <div className="border-t border-slate-300 pt-5">
         <PagerBar className="mb-3" page={page} pageSize={pageSize} total={grid.data?.count ?? 0} loading={grid.isFetching && !grid.data} onPage={setPage} onPageSize={setPageSize} />
         {grid.error ? <ErrorState error={grid.error} onRetry={() => void grid.refetch()} /> : (
-          <div className="overflow-x-auto bg-white">
-            <table className="w-full min-w-[1400px] border-collapse">
+          <div className="glass overflow-x-auto rounded-[18px]">
+            <table className="w-full min-w-[1400px] border-separate border-spacing-0">
               <thead>
                 <tr className="border-b-2 border-slate-800">
                   {columns.map((c) => (
@@ -209,11 +209,11 @@ export function WorkOrderDetailsPage() {
               </thead>
               <tbody className={cn(grid.isFetching && 'opacity-70')}>
                 {grid.isLoading ? (
-                  <tr><td colSpan={columns.length + 1} className="px-2 py-6"><div className="h-3 w-full animate-pulse rounded bg-slate-200" /></td></tr>
+                  <tr><td colSpan={columns.length + 1} className="px-2 py-6"><div className="h-3 w-full animate-pulse rounded-full bg-white/70" /></td></tr>
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={columns.length + 1} className="px-2 py-10 text-center text-muted-foreground">No devices allocated to this work order yet.</td></tr>
                 ) : rows.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-200 odd:bg-slate-100">
+                  <tr key={r.id} >
                     {columns.map((c) => <td key={c.key} className="border-l border-slate-200 px-2 py-2 first:border-l-0">{c.render(r)}</td>)}
                     <td className="border-l border-slate-200 px-2 py-1 text-center">
                       <DropdownMenu>

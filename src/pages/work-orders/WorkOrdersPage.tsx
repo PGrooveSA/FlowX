@@ -245,24 +245,24 @@ export function WorkOrdersPage() {
         </div>
       )}
 
-      <div role="tablist" aria-label="Work order stage" className="flex overflow-x-auto border-b border-slate-300 bg-slate-100">
+      <div role="tablist" aria-label="Work order stage" className="mb-3 flex gap-1.5 overflow-x-auto p-0.5">
         {TABS.map((t) => (
           <button key={t.key} role="tab" aria-selected={t.key === tab.key} onClick={() => switchTab(t.key)}
-            className={cn('-mb-px whitespace-nowrap border border-transparent px-4 py-2.5 text-[15px] font-semibold',
-              t.key === tab.key ? 'rounded-t border-slate-300 border-b-white bg-white text-primary' : 'text-slate-400 hover:text-slate-600')}>
+            className={cn('whitespace-nowrap rounded-full border px-4 py-2 text-[14px] font-medium transition-[transform,background-color,color] active:scale-95',
+              t.key === tab.key ? 'border-ink bg-ink text-white shadow-[0_6px_16px_rgba(29,29,27,.18)]' : 'glass-strong text-ink-2 hover:bg-white hover:text-ink')}>
             {t.label}
           </button>
         ))}
       </div>
 
-      <section role="tabpanel" aria-label={tab.label} className="bg-white px-3 pb-4 pt-4 text-[13px] text-slate-900">
+      <section role="tabpanel" aria-label={tab.label} className="glass rounded-3xl px-4 pb-4 pt-4 text-[13px] text-ink">
         <p className="mb-4 text-[15px]">{tab.description}</p>
 
         <PagerBar className="mb-3" page={page} pageSize={pageSize} total={total} loading={q.isFetching && !q.data} onPage={setPage} onPageSize={setPageSize} />
 
         {q.error ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] border-collapse">
+            <table className="w-full min-w-[1100px] border-separate border-spacing-0">
               <thead>
                 <tr className="border-b-2 border-slate-800">
                   {columns.map((c) => (
@@ -274,11 +274,11 @@ export function WorkOrdersPage() {
               </thead>
               <tbody className={cn(q.isFetching && 'opacity-70')}>
                 {q.isLoading ? Array.from({ length: pageSize > 10 ? 10 : pageSize }).map((_, i) => (
-                  <tr key={i} className="odd:bg-slate-100"><td colSpan={columns.length + 1} className="px-2 py-3"><div className="h-3 w-full animate-pulse rounded bg-slate-200" /></td></tr>
+                  <tr key={i}><td colSpan={columns.length + 1} className="px-2 py-3"><div className="h-3 w-full animate-pulse rounded-full bg-white/70" /></td></tr>
                 )) : rows.length === 0 ? (
                   <tr><td colSpan={columns.length + 1} className="px-2 py-10 text-center text-muted-foreground">No work orders found.</td></tr>
                 ) : rows.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-200 align-top odd:bg-slate-100">
+                  <tr key={r.id} className="align-top">
                     {columns.map((c) => <td key={c.key} className="px-2 py-3">{c.render(r)}</td>)}
                     <td className="px-2 py-2 text-center">
                       <div className="flex items-center justify-center gap-1">

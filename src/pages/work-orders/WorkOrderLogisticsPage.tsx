@@ -77,9 +77,9 @@ export function WorkOrderLogisticsPage() {
     : <p className="text-sm">No results</p>;
 
   return (
-    <div className="-mx-3 -my-4 min-h-full bg-slate-50 px-6 py-3 text-[13px] text-slate-900 sm:-mx-6 sm:-my-6">
+    <div className="text-[13px] text-ink">
       <div className="mb-3 flex items-center gap-2">
-        <Button variant="outline" size="sm" className="h-6 rounded-sm border-slate-800 px-2 text-xs text-primary" onClick={backToList}>&lt;Back to List</Button>
+        <Button variant="outline" size="sm" className="h-6 rounded-full border-slate-800 px-2 text-xs text-primary" onClick={backToList}>&lt;Back to List</Button>
         <Link to="/work-orders" className="text-sm text-primary hover:underline">Work Orders</Link>
       </div>
       <h1 className="border-b border-slate-300 pb-4 text-xl font-semibold">Work Orders <span aria-hidden>▸</span> Logistics</h1>
@@ -88,10 +88,10 @@ export function WorkOrderLogisticsPage() {
         <label htmlFor="logistics-wo" className="pt-2">Work Order Number:</label>
         <div>
           <input id="logistics-wo" value={number} onChange={(e) => setNumber(e.target.value)} autoComplete="off"
-            className="h-9 w-full rounded border border-slate-300 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            className="h-10 w-full rounded-[14px] border border-black/10 bg-white/70 px-3 text-sm focus-visible:border-ink focus-visible:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky/45" />
           <p className="mt-1 text-xs italic">Box labels can be generated for work orders in the Issued or Completed status.</p>
         </div>
-        <Button type="submit" variant="outline" size="sm" loading={busy} className="h-8 rounded-sm border-primary text-xs text-primary">Get Boxes</Button>
+        <Button type="submit" variant="outline" size="sm" loading={busy} className="h-8 rounded-full border-primary text-xs text-primary">Get Boxes</Button>
       </form>
 
       {message && <p role="alert" className="mt-4 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">{message}</p>}
@@ -103,10 +103,10 @@ export function WorkOrderLogisticsPage() {
             <Button size="sm" variant="outline" onClick={() => printLabels()}><Printer /> Print all box labels ({found.wo_number})</Button>
           )}
         </div>
-        <div className="overflow-x-auto bg-white">
-          <table className="w-full min-w-[600px] border-collapse">
+        <div className="glass overflow-x-auto rounded-[18px]">
+          <table className="w-full min-w-[600px] border-separate border-spacing-0">
             <thead>
-              <tr className="border-b border-slate-300 bg-slate-50">
+              <tr>
                 {columns.map((c) => (
                   <GridHeaderCell key={c.key} column={c} sort={sort} onSort={(col) => setSort((s) => (s.column === col ? { column: col, desc: !s.desc } : { column: col, desc: false }))}
                     filterValue={colFilters[c.key] ?? ''} onFilter={(v) => { setColFilters((s) => ({ ...s, [c.key]: v })); setPage(0); }} />
@@ -116,13 +116,13 @@ export function WorkOrderLogisticsPage() {
             </thead>
             <tbody>
               {!boxes ? (
-                <tr className="bg-slate-100"><td colSpan={3} className="px-2 py-2 text-center">Please search for a Work Order Number to view the Boxes</td></tr>
+                <tr><td colSpan={3} className="px-2 py-2 text-center">Please search for a Work Order Number to view the Boxes</td></tr>
               ) : pageRows.length === 0 ? (
-                <tr className="bg-slate-100"><td colSpan={3} className="px-2 py-2 text-center">
+                <tr><td colSpan={3} className="px-2 py-2 text-center">
                   {boxes.length === 0 ? `No boxes have been packed for ${found?.wo_number} yet. Assign boxes on the Work Order Details page.` : 'No boxes match the filters.'}
                 </td></tr>
               ) : pageRows.map((r) => (
-                <tr key={r.box_number} className="border-b border-slate-200 odd:bg-slate-100">
+                <tr key={r.box_number} >
                   <td className="px-2 py-1.5">{r.box_number}</td>
                   <td className="border-l border-slate-200 px-2 py-1.5">{r.device_count}</td>
                   <td className="border-l border-slate-200 px-2 py-1">
@@ -136,7 +136,7 @@ export function WorkOrderLogisticsPage() {
         </div>
         {resultBar}
         <div className="flex justify-end pt-4">
-          <Button variant="outline" size="sm" className="h-7 rounded-sm border-primary text-xs text-primary" onClick={backToList}>Back To List</Button>
+          <Button variant="outline" size="sm" className="h-7 rounded-full border-primary text-xs text-primary" onClick={backToList}>Back To List</Button>
         </div>
       </div>
     </div>

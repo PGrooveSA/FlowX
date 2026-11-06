@@ -9,18 +9,18 @@ export function DropdownMenuContent({ className, ...props }: React.ComponentProp
   return (
     <Dropdown.Portal>
       <Dropdown.Content sideOffset={4} align="end"
-        className={cn('z-50 min-w-[10rem] rounded-md border bg-card p-1 text-sm shadow-lg', className)} {...props} />
+        className={cn('z-50 min-w-[13rem] rounded-[20px] border border-white/80 bg-white/80 p-1.5 text-sm shadow-[0_2px_6px_rgba(20,30,40,.06),0_18px_44px_rgba(20,30,40,.14)] backdrop-blur-xl', className)} {...props} />
     </Dropdown.Portal>
   );
 }
 
 export function DropdownMenuItem({ className, ...props }: React.ComponentPropsWithoutRef<typeof Dropdown.Item>) {
-  return <Dropdown.Item className={cn('flex cursor-pointer select-none items-center gap-2 rounded px-2 py-1.5 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-50', className)} {...props} />;
+  return <Dropdown.Item className={cn('flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 outline-none data-[highlighted]:bg-white data-[disabled]:opacity-50', className)} {...props} />;
 }
 
 export function DropdownMenuCheckboxItem({ className, children, ...props }: React.ComponentPropsWithoutRef<typeof Dropdown.CheckboxItem>) {
   return (
-    <Dropdown.CheckboxItem className={cn('flex cursor-pointer select-none items-center gap-2 rounded px-2 py-1.5 outline-none data-[highlighted]:bg-muted', className)} {...props}>
+    <Dropdown.CheckboxItem className={cn('flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 outline-none data-[highlighted]:bg-white', className)} {...props}>
       <span className="flex h-4 w-4 items-center justify-center rounded border">
         <Dropdown.ItemIndicator>✓</Dropdown.ItemIndicator>
       </span>

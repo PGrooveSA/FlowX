@@ -5,13 +5,13 @@ import { cn } from '@/lib/utils';
 export const Tabs = TabsPrimitive.Root;
 
 export function TabsList({ className, ...props }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>) {
-  return <TabsPrimitive.List className={cn('flex w-full gap-1 overflow-x-auto border-b', className)} {...props} />;
+  return <TabsPrimitive.List className={cn('flex w-full gap-1.5 overflow-x-auto p-0.5', className)} {...props} />;
 }
 
 export function TabsTrigger({ className, ...props }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>) {
   return (
     <TabsPrimitive.Trigger
-      className={cn('-mb-px whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary',
+      className={cn('glass-strong whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] font-medium text-ink-2 shadow-none transition-colors hover:bg-white hover:text-foreground data-[state=active]:border-ink data-[state=active]:bg-ink data-[state=active]:text-white',
         className)}
       {...props} />
   );

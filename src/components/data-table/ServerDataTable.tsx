@@ -94,8 +94,8 @@ export function ServerDataTable<T extends Record<string, unknown>>(props: Server
   };
 
   return (
-    <div className="rounded-lg border bg-card shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
+    <div className="glass overflow-hidden rounded-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/5 px-4 py-2.5">
         <p className="text-xs text-muted-foreground" aria-live="polite">
           {query.isFetching ? 'Loading…' : `${total.toLocaleString('en-ZA')} record${total === 1 ? '' : 's'}`}
         </p>
@@ -126,8 +126,8 @@ export function ServerDataTable<T extends Record<string, unknown>>(props: Server
 
       {query.error ? <div className="p-4"><ErrorState error={query.error} onRetry={() => void query.refetch()} /></div> : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <table className="glass-table">
+            <thead>
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((h) => {
@@ -137,7 +137,7 @@ export function ServerDataTable<T extends Record<string, unknown>>(props: Server
                       <th key={h.id} scope="col" className="whitespace-nowrap px-3 py-2 font-medium"
                           aria-sort={dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : undefined}>
                         {sortable ? (
-                          <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={h.column.getToggleSortingHandler()}>
+                          <button className="inline-flex items-center gap-1 uppercase hover:opacity-80" onClick={h.column.getToggleSortingHandler()}>
                             {flexRender(h.column.columnDef.header, h.getContext())}
                             {dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : dir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                           </button>
@@ -151,7 +151,7 @@ export function ServerDataTable<T extends Record<string, unknown>>(props: Server
             <tbody>
               {query.isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-t">
+                  <tr key={i}>
                     {table.getVisibleLeafColumns().map((c) => <td key={c.id} className="px-3 py-3"><div className="h-3 w-3/4 animate-pulse rounded bg-muted" /></td>)}
                   </tr>
                 ))
@@ -161,7 +161,7 @@ export function ServerDataTable<T extends Record<string, unknown>>(props: Server
                 </td></tr>
               ) : table.getRowModel().rows.map((r) => (
                 <tr key={r.id}
-                  className={cn('border-t align-top hover:bg-muted/40', props.onRowClick && 'cursor-pointer', query.isFetching && 'opacity-70')}
+                  className={cn('align-top', props.onRowClick && 'clickable', query.isFetching && 'opacity-70')}
                   onClick={props.onRowClick ? (e) => { if (!(e.target as HTMLElement).closest('a,button,input')) props.onRowClick!(r.original); } : undefined}
                   onKeyDown={props.onRowClick ? (e) => { if (e.key === 'Enter') props.onRowClick!(r.original); } : undefined}
                   tabIndex={props.onRowClick ? 0 : undefined}>
@@ -173,7 +173,7 @@ export function ServerDataTable<T extends Record<string, unknown>>(props: Server
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t px-3 py-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-black/5 px-4 py-2.5 text-sm">
         <div className="flex items-center gap-2">
           <label htmlFor={`ps-${props.source}`} className="text-xs text-muted-foreground">Rows per page</label>
           <Select id={`ps-${props.source}`} className="h-8 w-20" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}

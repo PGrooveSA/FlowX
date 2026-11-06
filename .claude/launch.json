@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5180
+    },
+    {
+      "name": "deviceflow-web-check",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "5182", "--strictPort"],
+      "port": 5182
     }
   ]
 }

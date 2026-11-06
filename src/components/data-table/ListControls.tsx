@@ -24,11 +24,11 @@ export function ColumnFilterButton({ label, kind, value, onChange }: { label: st
   return (
     <div ref={box} className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)} aria-label={`Filter ${label}`} aria-expanded={open}
-        className={cn('rounded p-1 hover:bg-slate-200', value ? 'text-primary' : 'text-slate-700')}>
+        className={cn('rounded-full p-1 hover:bg-white/15', value ? 'text-sky' : 'text-white/80')}>
         <FilterIcon className="h-4 w-4" fill={value ? 'currentColor' : 'none'} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-1 w-56 rounded-md border bg-card p-2 font-normal shadow-lg" role="dialog" aria-label={`Filter ${label}`}>
+        <div className="absolute right-0 top-full z-30 mt-1 w-56 whitespace-normal rounded-[18px] border border-white/80 bg-white/90 p-2.5 text-sm font-normal normal-case tracking-normal text-ink shadow-[0_18px_44px_rgba(20,30,40,.14)] backdrop-blur-xl" role="dialog" aria-label={`Filter ${label}`}>
           {kind.type === 'select' ? (
             <Select aria-label={label} autoFocus value={draft} onChange={(e) => apply(e.target.value)} placeholder="All" options={kind.options} />
           ) : (
@@ -50,17 +50,17 @@ export function ColumnFilterButton({ label, kind, value, onChange }: { label: st
 export function Pagination({ page, pageCount, onPage }: { page: number; pageCount: number; onPage: (p: number) => void }) {
   const start = Math.max(0, Math.min(page - 2, pageCount - 5));
   const pages = Array.from({ length: Math.min(5, pageCount) }, (_, i) => start + i);
-  const btn = 'flex h-9 min-w-9 items-center justify-center border px-3 text-sm disabled:cursor-default disabled:bg-slate-200 disabled:text-slate-500';
+  const btn = 'flex h-9 min-w-9 items-center justify-center rounded-full border px-3 text-sm transition-transform active:scale-95 disabled:cursor-default disabled:opacity-40';
   return (
     <nav aria-label="Pagination" className="flex items-center gap-1">
-      <button className={cn(btn, 'bg-slate-200 text-slate-600')} disabled={page === 0} onClick={() => onPage(0)} aria-label="First page">«</button>
-      <button className={cn(btn, 'bg-slate-200 text-slate-600')} disabled={page === 0} onClick={() => onPage(page - 1)} aria-label="Previous page">‹</button>
+      <button className={cn(btn, 'glass-strong text-ink-2')} disabled={page === 0} onClick={() => onPage(0)} aria-label="First page">«</button>
+      <button className={cn(btn, 'glass-strong text-ink-2')} disabled={page === 0} onClick={() => onPage(page - 1)} aria-label="Previous page">‹</button>
       {pages.map((p) => (
         <button key={p} onClick={() => onPage(p)} aria-current={p === page ? 'page' : undefined}
-          className={cn(btn, p === page ? 'border-primary bg-primary text-white' : 'bg-white text-primary hover:bg-slate-50')}>{p + 1}</button>
+          className={cn(btn, p === page ? 'border-ink bg-ink text-white' : 'glass-strong text-ink hover:bg-white')}>{p + 1}</button>
       ))}
-      <button className={cn(btn, 'bg-white text-slate-600')} disabled={page + 1 >= pageCount} onClick={() => onPage(page + 1)} aria-label="Next page">›</button>
-      <button className={cn(btn, 'bg-white text-slate-600')} disabled={page + 1 >= pageCount} onClick={() => onPage(pageCount - 1)} aria-label="Last page">»</button>
+      <button className={cn(btn, 'glass-strong text-ink-2')} disabled={page + 1 >= pageCount} onClick={() => onPage(page + 1)} aria-label="Next page">›</button>
+      <button className={cn(btn, 'glass-strong text-ink-2')} disabled={page + 1 >= pageCount} onClick={() => onPage(pageCount - 1)} aria-label="Last page">»</button>
     </nav>
   );
 }
@@ -78,7 +78,7 @@ export function PagerBar({ page, pageSize, total, loading, onPage, onPageSize, c
       <div className="flex flex-wrap items-center gap-3">
         <Pagination page={page} pageCount={pageCount} onPage={onPage} />
         <select aria-label="Rows per page" value={pageSize} onChange={(e) => onPageSize(Number(e.target.value))}
-          className="h-9 rounded border border-slate-300 bg-white px-3 pr-8 text-sm">
+          className="h-9 rounded-[14px] border border-black/10 bg-white/70 px-3 pr-8 text-sm">
           {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
       </div>
@@ -95,18 +95,18 @@ export function GridHeaderCell<T>({ column, sort, onSort, filterValue, onFilter 
 }) {
   const sorted = sort.column === column.sort;
   return (
-    <th scope="col" className="border-l border-slate-200 px-2 py-2 text-left align-bottom font-semibold first:border-l-0"
+    <th scope="col" className="whitespace-normal border-l border-white/10 px-2 py-2.5 text-left align-bottom first:border-l-0"
       aria-sort={sorted ? (sort.desc ? 'descending' : 'ascending') : undefined}>
       <div className="flex items-end gap-1">
         {column.sort ? (
           <button type="button" onClick={() => onSort(column.sort!)} className="flex flex-1 items-end justify-between gap-1 text-left">
             <span>{column.label}</span>
-            {sorted ? (sort.desc ? <ArrowDown className="h-3.5 w-3.5 shrink-0 text-slate-700" /> : <ArrowUp className="h-3.5 w-3.5 shrink-0 text-slate-700" />)
-              : <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-slate-300" />}
+            {sorted ? (sort.desc ? <ArrowDown className="h-3.5 w-3.5 shrink-0 text-sky" /> : <ArrowUp className="h-3.5 w-3.5 shrink-0 text-sky" />)
+              : <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-white/40" />}
           </button>
         ) : <span className="flex-1">{column.label}</span>}
         {column.filter && (
-          <span className="ml-1 border-l border-slate-200 pl-1">
+          <span className="ml-1 border-l border-white/15 pl-1">
             <ColumnFilterButton label={column.label} kind={column.filter} value={filterValue} onChange={onFilter} />
           </span>
         )}

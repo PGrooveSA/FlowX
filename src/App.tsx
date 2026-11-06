@@ -22,6 +22,7 @@ const WorkOrderImportPage =page(() => import('@/pages/work-orders/WorkOrderImpor
 const DeviceRegisterPage = page(() => import('@/pages/devices/DeviceRegisterPage'), 'DeviceRegisterPage');
 const DeviceDetailPage = page(() => import('@/pages/devices/DeviceDetailPage'), 'DeviceDetailPage');
 const DeviceImportPage = page(() => import('@/pages/devices/DeviceImportPage'), 'DeviceImportPage');
+const BatchScanPage = page(() => import('@/pages/devices/BatchScanPage'), 'BatchScanPage');
 const WarehousePage = page(() => import('@/pages/warehouse/WarehousePage'), 'WarehousePage');
 const GoodsReceiptPage = page(() => import('@/pages/warehouse/GoodsReceiptPage'), 'GoodsReceiptPage');
 const StockCountPage = page(() => import('@/pages/warehouse/StockCountPage'), 'StockCountPage');
@@ -57,7 +58,7 @@ const PrintLabels = page(() => import('@/pages/print/PrintLabels'), 'PrintLabels
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading, profile } = useAuth();
   const location = useLocation();
-  if (loading) return <LoadingState label="Checking your sessionâ€¦" />;
+  if (loading) return <LoadingState label="Checking your session…" />;
   if (!session) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   if (profile && !profile.is_active) {
     return <div className="p-10 text-center">Your account has been deactivated. Contact an administrator.</div>;
@@ -106,6 +107,7 @@ export function App() {
           <Route path="scheduling" element={<Navigate to="/work-orders?tab=pending_scheduling" replace />} />
           <Route path="devices" element={guard(['devices.view'], <DeviceRegisterPage />)} />
           <Route path="devices/import" element={guard(['devices.register'], <DeviceImportPage />)} />
+          <Route path="devices/scan" element={guard(['devices.register'], <BatchScanPage />)} />
           <Route path="devices/:id" element={guard(['devices.view'], <DeviceDetailPage />)} />
           <Route path="warehouse" element={guard(['inventory.view'], <WarehousePage />)} />
           <Route path="warehouse/receiving/:id" element={guard(['inventory.view'], <GoodsReceiptPage />)} />

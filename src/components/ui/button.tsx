@@ -5,21 +5,21 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-[transform,background-color,box-shadow,color] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
-        destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        outline: 'border border-input bg-card shadow-sm hover:bg-muted',
-        secondary: 'bg-muted text-foreground hover:bg-muted/70',
-        ghost: 'hover:bg-muted',
+        default: 'border border-primary/90 bg-primary/90 text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,.18),0_6px_16px_rgba(29,29,27,.22)] hover:bg-primary/80',
+        destructive: 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100',
+        outline: 'glass-strong text-foreground hover:bg-white',
+        secondary: 'glass-strong text-foreground hover:bg-white',
+        ghost: 'hover:bg-black/5',
         link: 'text-primary underline-offset-4 hover:underline px-0',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 text-xs',
-        lg: 'h-10 rounded-md px-6',
+        default: 'h-10 px-[18px] py-2',
+        sm: 'h-8 px-3 text-[12.5px]',
+        lg: 'h-11 px-6 text-[15px]',
         icon: 'h-9 w-9',
       },
     },

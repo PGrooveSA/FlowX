@@ -2,40 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 220 14% 96%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --muted: 220 14% 94%;
-    --muted-foreground: 220 9% 40%;
-    --border: 220 13% 88%;
-    --input: 220 13% 82%;
-    --ring: 221 83% 53%;
-    /* primary is an "r g b" triple so the brand colour can be configured at runtime */
-    --primary: 29 78 216;
-    --primary-foreground: 0 0% 100%;
-    --destructive: 0 72% 45%;
-    --destructive-foreground: 0 0% 100%;
-  }
-  html { -webkit-text-size-adjust: 100%; }
-  body { @apply bg-background text-foreground antialiased; font-feature-settings: 'tnum' 1; }
-  :focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
-  * { @apply border-border; }
+/* Look and feel: the Stock Room Control App style - cool off-white with a light blue glow, frosted glass
+   panels, black for the main buttons and the open item, light blue highlights, Outfit font. */
+@font-face {
+  font-family: "Outfit"; font-style: normal; font-display: swap; font-weight: 100 900;
+  src: url(/fonts/outfit-latin.woff2) format("woff2-variations"), url(/fonts/outfit-latin.woff2) format("woff2");
 }
 
+@layer base {
+  :root {
+    --background: 206 22% 94%;
+    --foreground: 60 4% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 60 4% 11%;
+    --muted: 205 25% 95%;
+    --muted-foreground: 213 7% 45%;
+    --border: 206 23% 90%;
+    --input: 206 15% 84%;
+    --ring: 202 84% 76%;
+    /* primary is an "r g b" triple so the brand colour can be configured at runtime */
+    --primary: 29 29 27;
+    --primary-foreground: 0 0% 100%;
+    --destructive: 3 61% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --sky: 142 207 245;
+    --glass: rgba(255, 255, 255, .5);
+    --glass-strong: rgba(255, 255, 255, .72);
+    --glass-edge: rgba(255, 255, 255, .78);
+    --glass-blur: blur(20px) saturate(1.5);
+    --glass-shine: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 0 0 1px rgba(255, 255, 255, .25);
+    --shadow-1: 0 1px 2px rgba(20, 30, 40, .04), 0 8px 24px rgba(20, 30, 40, .06);
+    --shadow-2: 0 2px 6px rgba(20, 30, 40, .06), 0 18px 44px rgba(20, 30, 40, .14);
+  }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply text-foreground antialiased;
+    min-height: 100vh;
+    font-size: 14.5px;
+    background: radial-gradient(900px 640px at 105% -6%, #cfeafb 0%, rgba(207, 234, 251, 0) 62%),
+                radial-gradient(760px 520px at 78% 112%, rgba(142, 207, 245, .16) 0%, rgba(142, 207, 245, 0) 60%),
+                linear-gradient(180deg, #f2f5f8 0%, #e9eef2 100%) fixed;
+  }
+  body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(460px circle at 16% 24%, rgba(142, 207, 245, .42), transparent 70%),
+                radial-gradient(560px circle at 88% 68%, rgba(191, 228, 250, .5), transparent 70%),
+                radial-gradient(420px circle at 52% 108%, rgba(176, 200, 218, .45), transparent 70%),
+                radial-gradient(360px circle at 62% 30%, rgba(255, 255, 255, .8), transparent 70%); }
+  :focus-visible { outline: 2px solid rgb(var(--sky)); outline-offset: 2px; }
+  * { @apply border-border; }
+  input[type=checkbox], input[type=radio] { accent-color: rgb(var(--primary)); }
+  /* data tables in the app and in dialogs: black header with white capitals, soft glass rows.
+     :where keeps these low-priority, so a table can still override them with utility classes. */
+  :where(#main, [role=dialog]) :where(thead th) { background: #1d1d1b; color: #fff; font-weight: 500; font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: .06em; white-space: nowrap; }
+  :where(#main, [role=dialog]) :where(thead th:first-child) { border-top-left-radius: 0; }
+  :where(#main, [role=dialog]) :where(tbody td) { border-bottom: 1px solid #eef2f5; }
+  :where(#main, [role=dialog]) :where(tbody tr:last-child td) { border-bottom: 0; }
+  :where(#main, [role=dialog]) :where(tbody tr:nth-child(even) > td) { background: rgba(255, 255, 255, .35); }
+  :where(#main, [role=dialog]) :where(tbody tr.clickable) { cursor: pointer; }
+  :where(#main, [role=dialog]) :where(tbody tr.clickable:hover > td) { background: #e8f6fe; }
+  :where(#main, [role=dialog]) :where(.glass-table thead th) { padding: 11px 12px; text-align: left; position: sticky; top: 0; z-index: 1; }
+  :where(#main, [role=dialog]) :where(.glass-table tbody td) { padding: 9px 12px; vertical-align: middle; }}
+
 @layer components {
-  .page-title { @apply text-xl font-semibold tracking-tight text-foreground sm:text-2xl; }
+  .page-title { @apply text-2xl font-semibold tracking-tight text-foreground sm:text-[30px] sm:leading-tight; }
   .section-title { @apply text-sm font-semibold text-foreground; }
   .muted { @apply text-muted-foreground; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .mono { font-family: "Cascadia Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* frosted glass surfaces */
+  .glass { background: var(--glass); border: 1px solid var(--glass-edge); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shine), var(--shadow-1); }
+  .glass-strong { background: var(--glass-strong); border: 1px solid var(--glass-edge); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shine), 0 4px 14px rgba(20, 30, 40, .05); }
+
+  /* data tables (see the base layer): .glass-table only adds the full-width layout */
+  .glass-table { @apply w-full border-separate border-spacing-0 text-[13.5px]; }
+}
+
+/* sonner toasts in the dark glass style */
+[data-sonner-toaster] [data-sonner-toast] { border-radius: 18px !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
 /* Print layouts for documents and labels */
 @media print {
   @page { margin: 12mm; }
   body { background: #fff !important; }
+  body::before { display: none; }
   .no-print { display: none !important; }
   .print-page { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; }
   .label-sheet { gap: 0 !important; }

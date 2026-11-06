@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <App />
-          <Toaster position="top-right" richColors closeButton />
+          <Toaster position="bottom-right" closeButton toastOptions={{ style: { background: 'rgba(29,29,27,.86)', color: '#fff', border: '1px solid rgba(255,255,255,.12)' } }} />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

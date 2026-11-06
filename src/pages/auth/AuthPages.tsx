@@ -13,11 +13,11 @@ import { Field, Input } from '@/components/ui/form-controls';
 function AuthShell({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   const { branding } = useAuth();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 px-4">
-      <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-sm rounded-[28px] border border-white/80 bg-white/60 p-7 shadow-[0_30px_70px_rgba(6,18,28,.18)] backdrop-blur-[20px] backdrop-saturate-150">
         <div className="mb-5 flex items-center gap-2">
-          {branding.logoUrl ? <img src={branding.logoUrl} alt="" className="h-9 w-9 rounded" />
-            : <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary font-bold text-white">{branding.appName.charAt(0)}</span>}
+          {branding.logoUrl ? <img src={branding.logoUrl} alt="" className="h-10 w-10 rounded-full object-contain" />
+            : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink font-semibold text-white">{branding.appName.charAt(0)}</span>}
           <div>
             <p className="font-semibold leading-tight">{branding.appName}</p>
             <p className="text-xs text-muted-foreground">{branding.orgName}</p>
@@ -64,7 +64,7 @@ export function LoginPage() {
         <Field label="Password" htmlFor="password" error={form.formState.errors.password?.message}>
           <Input id="password" type="password" autoComplete="current-password" {...form.register('password')} aria-invalid={!!form.formState.errors.password} />
         </Field>
-        {error && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+        {error && <p role="alert" className="rounded-2xl border border-red-200 bg-red-50/80 px-3 py-2 text-sm text-red-800">{error}</p>}
         <Button type="submit" className="w-full" loading={form.formState.isSubmitting}>Sign in</Button>
         <p className="text-center text-sm"><Link to="/forgot-password" className="text-primary hover:underline">Forgot your password?</Link></p>
       </form>
