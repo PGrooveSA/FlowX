@@ -99,7 +99,7 @@ export function AppLayout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/60 bg-[rgba(244,247,249,.45)] px-3 backdrop-blur-[20px] backdrop-saturate-150 sm:px-[22px]">
+        <header className="no-print sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/70 bg-[rgba(240,244,247,.86)] px-3 shadow-[0_1px_0_rgba(20,30,40,.04),0_6px_18px_rgba(20,30,40,.05)] backdrop-blur-[20px] backdrop-saturate-150 sm:px-[22px]">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu /></Button>
           <button onClick={() => setSearchOpen(true)}
             className="glass-strong flex h-10 w-full max-w-md items-center gap-2 rounded-full px-4 text-sm text-muted-foreground transition-colors hover:bg-white">

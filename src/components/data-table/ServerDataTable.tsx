@@ -125,7 +125,7 @@ export function ServerDataTable<T extends Record<string, unknown>>(props: Server
       </div>
 
       {query.error ? <div className="p-4"><ErrorState error={query.error} onRetry={() => void query.refetch()} /></div> : (
-        <div className="overflow-x-auto">
+        <div className="max-h-[calc(100vh-22rem)] min-h-[240px] overflow-auto overscroll-x-contain">
           <table className="glass-table">
             <thead>
               {table.getHeaderGroups().map((hg) => (
@@ -134,7 +134,7 @@ export function ServerDataTable<T extends Record<string, unknown>>(props: Server
                     const sortable = h.column.getCanSort();
                     const dir = h.column.getIsSorted();
                     return (
-                      <th key={h.id} scope="col" className="whitespace-nowrap px-3 py-2 font-medium"
+                      <th key={h.id} scope="col" className="sticky top-0 z-[1] whitespace-nowrap px-3 py-2.5 font-medium"
                           aria-sort={dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : undefined}>
                         {sortable ? (
                           <button className="inline-flex items-center gap-1 uppercase hover:opacity-80" onClick={h.column.getToggleSortingHandler()}>

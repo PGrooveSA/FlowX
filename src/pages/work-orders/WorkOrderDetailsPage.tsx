@@ -196,7 +196,7 @@ export function WorkOrderDetailsPage() {
       <div className="border-t border-slate-300 pt-5">
         <PagerBar className="mb-3" page={page} pageSize={pageSize} total={grid.data?.count ?? 0} loading={grid.isFetching && !grid.data} onPage={setPage} onPageSize={setPageSize} />
         {grid.error ? <ErrorState error={grid.error} onRetry={() => void grid.refetch()} /> : (
-          <div className="glass overflow-x-auto rounded-[18px]">
+          <div className="glass max-h-[calc(100vh-22rem)] min-h-[200px] overflow-auto rounded-[18px]">
             <table className="w-full min-w-[1400px] border-separate border-spacing-0">
               <thead>
                 <tr className="border-b-2 border-slate-800">
@@ -204,7 +204,7 @@ export function WorkOrderDetailsPage() {
                     <GridHeaderCell key={c.key} column={c} sort={sort} onSort={(col) => setSort((s) => (s.column === col ? { column: col, desc: !s.desc } : { column: col, desc: false }))}
                       filterValue={colFilters[c.key] ?? ''} onFilter={(v) => setColFilters((s) => ({ ...s, [c.key]: v }))} />
                   ))}
-                  <th scope="col" className="border-l border-slate-200 px-2 py-2 text-left align-bottom font-semibold">Actions</th>
+                  <th scope="col" className="sticky top-0 z-[2] border-l border-white/10 px-2 py-2.5 text-left align-bottom">Actions</th>
                 </tr>
               </thead>
               <tbody className={cn(grid.isFetching && 'opacity-70')}>

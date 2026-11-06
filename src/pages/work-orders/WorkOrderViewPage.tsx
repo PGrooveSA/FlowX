@@ -151,7 +151,7 @@ export function WorkOrderViewPage() {
       <p className="mb-4">This is a list of Packages currently in this Work Order.</p>
       <PagerBar className="mb-3" page={page} pageSize={pageSize} total={total} loading={grid.isFetching && !grid.data} onPage={setPage} onPageSize={setPageSize} />
       {grid.error ? <ErrorState error={grid.error} onRetry={() => void grid.refetch()} /> : (
-        <div className="glass overflow-x-auto rounded-[18px]">
+        <div className="glass max-h-[calc(100vh-22rem)] min-h-[200px] overflow-auto rounded-[18px]">
           <table className="w-full min-w-[800px] border-separate border-spacing-0">
             <thead>
               <tr>

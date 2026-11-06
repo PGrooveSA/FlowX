@@ -261,7 +261,7 @@ export function WorkOrdersPage() {
         <PagerBar className="mb-3" page={page} pageSize={pageSize} total={total} loading={q.isFetching && !q.data} onPage={setPage} onPageSize={setPageSize} />
 
         {q.error ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : (
-          <div className="overflow-x-auto">
+          <div className="max-h-[calc(100vh-22rem)] min-h-[260px] overflow-auto rounded-[18px]">
             <table className="w-full min-w-[1100px] border-separate border-spacing-0">
               <thead>
                 <tr className="border-b-2 border-slate-800">
@@ -269,7 +269,7 @@ export function WorkOrdersPage() {
                     <GridHeaderCell key={c.key} column={c} sort={sort} onSort={toggleSort} filterValue={colFilters[c.key] ?? ''}
                       onFilter={(v) => setColFilters((s) => ({ ...s, [c.key]: v }))} />
                   ))}
-                  <th scope="col" className="border-l border-slate-200 px-2 py-2 text-left align-bottom font-semibold">{tab.actionLabel ?? 'Actions'}</th>
+                  <th scope="col" className="sticky top-0 z-[2] border-l border-white/10 px-2 py-2.5 text-left align-bottom">{tab.actionLabel ?? 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className={cn(q.isFetching && 'opacity-70')}>

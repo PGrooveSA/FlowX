@@ -95,7 +95,7 @@ export function GridHeaderCell<T>({ column, sort, onSort, filterValue, onFilter 
 }) {
   const sorted = sort.column === column.sort;
   return (
-    <th scope="col" className="whitespace-normal border-l border-white/10 px-2 py-2.5 text-left align-bottom first:border-l-0"
+    <th scope="col" className="sticky top-0 z-[2] whitespace-normal border-l border-white/10 px-2 py-2.5 text-left align-bottom first:border-l-0"
       aria-sort={sorted ? (sort.desc ? 'descending' : 'ascending') : undefined}>
       <div className="flex items-end gap-1">
         {column.sort ? (
